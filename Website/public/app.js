@@ -69,9 +69,10 @@
     role: 'user',
     sessions: {},        // role -> { token, user, socket }
     rider: {
-      pickup: { lat: 41.2995, lng: 69.2401 },
-      dropoff: { lat: 41.3111, lng: 69.2797 },
+      pickup: { lat: 41.2995, lng: 69.2401, name: 'Amir Timur Square' },
+      dropoff: { lat: 41.3111, lng: 69.2797, name: 'Tashkent International Airport' },
       mode: 'pickup',
+      tier: 'economy',
       activeRide: null,
       rides: [],
       selectedHistoryId: null
@@ -127,12 +128,76 @@
     });
   }
 
+  var mapTileLayer = null;
+
+  function playChime(kind) {
+    var soundEnabled = window.localStorage.getItem('paperide.setting.sound') !== 'false';
+    if (!soundEnabled) return;
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      var now = ctx.currentTime;
+      if (kind === 'success' || kind === 'accept') {
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.12); // E5
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.25); // G5
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.36);
+      } else if (kind === 'offer') {
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.32);
+      } else {
+        osc.frequency.setValueAtTime(400, now);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+    } catch (e) {}
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var icon = $('#theme-toggle .theme-icon');
+    if (icon) {
+      if (theme === 'light') icon.textContent = '☀️';
+      else if (theme === 'oled') icon.textContent = '🖤';
+      else if (theme === 'emerald') icon.textContent = '💎';
+      else icon.textContent = '🌙';
+    }
+    var savedMapStyle = window.localStorage.getItem('paperide.mapStyle');
+    setMapTheme(savedMapStyle || (theme === 'light' ? 'voyager' : 'dark'));
+  }
+
+  function setMapTheme(style) {
+    var url = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    var attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+    if (style === 'voyager' || style === 'light') {
+      url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    } else if (style === 'satellite') {
+      url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      attr = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+    }
+
+    if (mapTileLayer && map) map.removeLayer(mapTileLayer);
+    mapTileLayer = L.tileLayer(url, { maxZoom: 19, subdomains: 'abcd', attribution: attr });
+    if (map) mapTileLayer.addTo(map);
+  }
+
   function initMap() {
     map = L.map('map', { center: [TASHKENT.lat, TASHKENT.lng], zoom: 13, zoomControl: true });
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Tiles &copy; Esri'
-    }).addTo(map);
+    var currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    setMapTheme(currentTheme);
 
     layers.rider = L.layerGroup().addTo(map);
     layers.operator = L.layerGroup().addTo(map);
@@ -148,23 +213,24 @@
       draggable: true, icon: pinIcon('ride-pin dropoff', 'B')
     }).addTo(layers.rider).bindPopup('<b>Destination</b><br>Drag me');
 
-    state.rider.routeLine = L.polyline([], { color: '#2fd07f', weight: 4, dashArray: '8 8' }).addTo(layers.rider);
+    state.rider.routeLineGlow = L.polyline([], { color: '#2fd07f', weight: 8, opacity: 0.35, lineCap: 'round', lineJoin: 'round' }).addTo(layers.rider);
+    state.rider.routeLine = L.polyline([], { color: '#00f59b', weight: 4, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }).addTo(layers.rider);
 
     state.rider.pickupMarker.on('dragend', function () {
       var p = state.rider.pickupMarker.getLatLng();
-      state.rider.pickup = { lat: p.lat, lng: p.lng };
+      state.rider.pickup = { lat: p.lat, lng: p.lng, name: findNearestLandmark(p) };
       refreshRiderEstimate();
     });
     state.rider.dropoffMarker.on('dragend', function () {
       var p = state.rider.dropoffMarker.getLatLng();
-      state.rider.dropoff = { lat: p.lat, lng: p.lng };
+      state.rider.dropoff = { lat: p.lat, lng: p.lng, name: findNearestLandmark(p) };
       refreshRiderEstimate();
     });
 
     // Click to place the marker of the currently selected rider mode.
     map.on('click', function (e) {
       if (state.role === 'user') {
-        var point = { lat: e.latlng.lat, lng: e.latlng.lng };
+        var point = { lat: e.latlng.lat, lng: e.latlng.lng, name: findNearestLandmark(e.latlng) };
         if (state.rider.mode === 'pickup') {
           state.rider.pickup = point;
           state.rider.pickupMarker.setLatLng(point);
@@ -196,18 +262,58 @@
       ' · view: ' + role;
   }
 
+  var TASHKENT_LANDMARKS = [
+    { name: 'Amir Timur Square', lat: 41.2995, lng: 69.2401 },
+    { name: 'Tashkent International Airport (TAS)', lat: 41.2575, lng: 69.2812 },
+    { name: 'Tashkent City Park', lat: 41.3117, lng: 69.2457 },
+    { name: 'Chorsu Bazaar', lat: 41.3265, lng: 69.2285 },
+    { name: 'Tashkent TV Tower', lat: 41.3409, lng: 69.2849 },
+    { name: 'Magic City', lat: 41.3032, lng: 69.2476 },
+    { name: 'Tashkent Central Railway Station (Severny)', lat: 41.2917, lng: 69.2842 }
+  ];
+
+  function findNearestLandmark(p) {
+    if (!p) return 'Selected Location';
+    var best = null;
+    var minD = Infinity;
+    TASHKENT_LANDMARKS.forEach(function (l) {
+      var d = haversineKm(p, l);
+      if (d < minD) { minD = d; best = l; }
+    });
+    if (minD < 0.8 && best) return best.name;
+    return fmt(p.lat, 4) + ', ' + fmt(p.lng, 4);
+  }
+
   function drawRiderRoute() {
     var r = state.rider;
-    r.routeLine.setLatLngs([[r.pickup.lat, r.pickup.lng], [r.dropoff.lat, r.dropoff.lng]]);
-    setText('#rider-pickup-coords', coordText(r.pickup));
-    setText('#rider-dropoff-coords', coordText(r.dropoff));
+    var coords = [[r.pickup.lat, r.pickup.lng], [r.dropoff.lat, r.dropoff.lng]];
+    if (r.routeLineGlow) r.routeLineGlow.setLatLngs(coords);
+    r.routeLine.setLatLngs(coords);
+    var pInput = $('#rider-search-pickup');
+    var dInput = $('#rider-search-dropoff');
+    if (pInput && !pInput._hasFocus) pInput.value = r.pickup.name || findNearestLandmark(r.pickup);
+    if (dInput && !dInput._hasFocus) dInput.value = r.dropoff.name || findNearestLandmark(r.dropoff);
   }
 
   function refreshRiderEstimate() {
     drawRiderRoute();
     var d = haversineKm(state.rider.pickup, state.rider.dropoff);
-    setText('#rider-quote-distance', d.toFixed(2) + ' km');
-    setText('#rider-quote-fare', money(Math.round(9000 + d * 2500)));
+    var estMins = Math.max(3, Math.round(d * 2.4 + 2));
+    setText('#rider-quote-distance', d.toFixed(1) + ' km');
+    setText('#rider-est-duration', '~' + estMins + ' min');
+
+    // Tier calculation multiplier
+    var baseEconomy = Math.round(9000 + d * 2500);
+    var baseComfort = Math.round(14000 + d * 3400);
+    var baseBusiness = Math.round(24000 + d * 5200);
+
+    setText('#price-economy', money(baseEconomy));
+    setText('#price-comfort', money(baseComfort));
+    setText('#price-business', money(baseBusiness));
+
+    var activeTier = state.rider.tier || 'economy';
+    var currentFare = activeTier === 'business' ? baseBusiness : (activeTier === 'comfort' ? baseComfort : baseEconomy);
+    setText('#rider-quote-fare', money(currentFare));
   }
 
   function haversineKm(a, b) {
@@ -1610,6 +1716,101 @@
       });
     });
 
+    // theme toggle (Light / Dark mode)
+    var savedTheme = window.localStorage.getItem('paperide.theme') || 'dark';
+    applyTheme(savedTheme);
+
+    var themeBtn = $('#theme-toggle');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        var nextTheme = current === 'light' ? 'dark' : 'light';
+        applyTheme(nextTheme);
+        window.localStorage.setItem('paperide.theme', nextTheme);
+        toast(t('Theme updated'), nextTheme === 'light' ? t('Light mode') : t('Dark mode'), 'success');
+        playChime('success');
+      });
+    }
+
+    // Settings Modal
+    var openSettingsBtn = $('#open-settings');
+    var settingsModal = $('#settings-modal');
+    var settingsCloseBtn = $('#settings-close');
+    var settingsSaveBtn = $('#settings-save');
+
+    function openSettings() {
+      if (settingsModal) {
+        settingsModal.classList.remove('hidden');
+        var curTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        $all('.theme-card').forEach(function (c) {
+          c.classList.toggle('is-active', c.getAttribute('data-app-theme') === curTheme);
+        });
+        var curMap = window.localStorage.getItem('paperide.mapStyle') || (curTheme === 'light' ? 'voyager' : 'dark');
+        $all('.map-theme-btn').forEach(function (b) {
+          b.classList.toggle('is-active', b.getAttribute('data-map-style') === curMap);
+        });
+        var snd = $('#setting-sound');
+        if (snd) snd.checked = window.localStorage.getItem('paperide.setting.sound') !== 'false';
+        var defTier = $('#setting-default-tier');
+        if (defTier) defTier.value = window.localStorage.getItem('paperide.setting.defaultTier') || 'economy';
+      }
+    }
+
+    function closeSettings() {
+      if (settingsModal) settingsModal.classList.add('hidden');
+    }
+
+    if (openSettingsBtn) openSettingsBtn.addEventListener('click', openSettings);
+    if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', closeSettings);
+    if (settingsModal) {
+      settingsModal.addEventListener('click', function (e) {
+        if (e.target === settingsModal) closeSettings();
+      });
+    }
+
+    $all('.theme-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        $all('.theme-card').forEach(function (c) { c.classList.remove('is-active'); });
+        card.classList.add('is-active');
+        var chosenTheme = card.getAttribute('data-app-theme');
+        applyTheme(chosenTheme);
+        window.localStorage.setItem('paperide.theme', chosenTheme);
+        playChime('success');
+      });
+    });
+
+    $all('.map-theme-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $all('.map-theme-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+        var chosenStyle = btn.getAttribute('data-map-style');
+        window.localStorage.setItem('paperide.mapStyle', chosenStyle);
+        setMapTheme(chosenStyle);
+        playChime('success');
+      });
+    });
+
+    if (settingsSaveBtn) {
+      settingsSaveBtn.addEventListener('click', function () {
+        var snd = $('#setting-sound');
+        if (snd) window.localStorage.setItem('paperide.setting.sound', snd.checked ? 'true' : 'false');
+        var defTier = $('#setting-default-tier');
+        if (defTier) {
+          window.localStorage.setItem('paperide.setting.defaultTier', defTier.value);
+          state.rider.tier = defTier.value;
+          var tierCard = $('[data-tier="' + defTier.value + '"]');
+          if (tierCard) {
+            $all('.ride-tier-card').forEach(function (c) { c.classList.remove('is-selected'); });
+            tierCard.classList.add('is-selected');
+          }
+          refreshRiderEstimate();
+        }
+        closeSettings();
+        toast(t('Settings saved'), t('Personalization applied'), 'success');
+        playChime('accept');
+      });
+    }
+
     // language switch
     $all('.lang-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -1665,16 +1866,72 @@
     $('#rider-cancel-btn').addEventListener('click', cancelRide);
     $('#rider-mode-pickup').addEventListener('click', function () {
       state.rider.mode = 'pickup';
-      $('#rider-mode-pickup').className = 'btn small primary';
-      $('#rider-mode-dropoff').className = 'btn small';
       toast(t('Pickup mode'), t('Tap the map to move the pickup marker'), '');
     });
     $('#rider-mode-dropoff').addEventListener('click', function () {
       state.rider.mode = 'dropoff';
-      $('#rider-mode-dropoff').className = 'btn small primary';
-      $('#rider-mode-pickup').className = 'btn small';
       toast(t('Destination mode'), t('Tap the map to move the destination marker'), '');
     });
+
+    // Ride Tier Selection (Uber / Yandex Go classes)
+    $all('.ride-tier-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        $all('.ride-tier-card').forEach(function (c) { c.classList.remove('is-selected'); });
+        card.classList.add('is-selected');
+        state.rider.tier = card.getAttribute('data-tier') || 'economy';
+        refreshRiderEstimate();
+      });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          card.click();
+        }
+      });
+    });
+
+    // Quick Destination Chips
+    $all('.quick-chips .chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        var lat = parseFloat(chip.getAttribute('data-lat'));
+        var lng = parseFloat(chip.getAttribute('data-lng'));
+        var name = chip.getAttribute('data-name');
+        if (!isNaN(lat) && !isNaN(lng)) {
+          state.rider.dropoff = { lat: lat, lng: lng, name: name };
+          state.rider.dropoffMarker.setLatLng([lat, lng]);
+          refreshRiderEstimate();
+          map.panTo([lat, lng]);
+          toast(t('Destination set'), name, 'success');
+        }
+      });
+    });
+
+    // Payment method selector
+    $all('.payment-methods .pay-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $all('.payment-methods .pay-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+        state.rider.paymentMethod = btn.getAttribute('data-pay') || 'cash';
+        toast(t('Payment selected'), btn.textContent.trim(), 'success');
+      });
+    });
+
+    // Smart Address Inputs
+    var pInput = $('#rider-search-pickup');
+    var dInput = $('#rider-search-dropoff');
+    if (pInput) {
+      pInput.addEventListener('focus', function () { pInput._hasFocus = true; });
+      pInput.addEventListener('blur', function () { pInput._hasFocus = false; });
+      pInput.addEventListener('change', function () {
+        state.rider.pickup.name = pInput.value.trim();
+      });
+    }
+    if (dInput) {
+      dInput.addEventListener('focus', function () { dInput._hasFocus = true; });
+      dInput.addEventListener('blur', function () { dInput._hasFocus = false; });
+      dInput.addEventListener('change', function () {
+        state.rider.dropoff.name = dInput.value.trim();
+      });
+    }
 
     // driver
     $('#dr-toggle').addEventListener('click', toggleDriverOnline);
@@ -1851,10 +2108,119 @@
     logEvent(t('Language changed'));
   }
 
+  /* ---------------------------------------------------------- typing hero */
+  var TYPING_PHRASES = ['confidence', 'ease', 'real-time tracking', 'live dispatch', 'safety'];
+  var typingIndex = 0;
+  var typingCharIndex = 0;
+  var typingDeleting = false;
+  var typingEl = null;
+
+  function typeStep() {
+    if (!typingEl) typingEl = document.getElementById('typing-text');
+    if (!typingEl) return;
+    var phrase = TYPING_PHRASES[typingIndex];
+    if (!typingDeleting) {
+      typingCharIndex++;
+      typingEl.textContent = phrase.substring(0, typingCharIndex);
+      if (typingCharIndex === phrase.length) {
+        typingDeleting = true;
+        setTimeout(typeStep, 2200);
+        return;
+      }
+      setTimeout(typeStep, 65 + Math.random() * 35);
+    } else {
+      typingCharIndex--;
+      typingEl.textContent = phrase.substring(0, typingCharIndex);
+      if (typingCharIndex === 0) {
+        typingDeleting = false;
+        typingIndex = (typingIndex + 1) % TYPING_PHRASES.length;
+        setTimeout(typeStep, 400);
+        return;
+      }
+      setTimeout(typeStep, 32);
+    }
+  }
+
+  /* -------------------------------------------------------- scroll reveal */
+  function initScrollReveal() {
+    var reveals = document.querySelectorAll('.reveal');
+    if (!reveals.length) return;
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            // trigger stat counter if stat-block children exist
+            var statNumbers = entry.target.querySelectorAll('.stat-number[data-target]');
+            statNumbers.forEach(function (el) {
+              if (!el._counted) { el._counted = true; animateCounter(el); }
+            });
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      reveals.forEach(function (el) { observer.observe(el); });
+    } else {
+      // fallback: show all
+      reveals.forEach(function (el) { el.classList.add('is-visible'); });
+    }
+  }
+
+  /* ------------------------------------------------------ stats counter */
+  function animateCounter(el) {
+    var target = parseInt(el.getAttribute('data-target'), 10);
+    if (isNaN(target)) return;
+    var duration = 1600;
+    var startTime = null;
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = Math.min((timestamp - startTime) / duration, 1);
+      // ease-out cubic
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target).toLocaleString('en-US');
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* -------------------------------------------------------- hamburger menu */
+  function initHamburger() {
+    var btn = document.getElementById('hamburger');
+    var nav = document.getElementById('main-nav');
+    if (!btn || !nav) return;
+    btn.addEventListener('click', function () {
+      var isOpen = nav.classList.toggle('is-open');
+      btn.classList.toggle('is-open', isOpen);
+      btn.setAttribute('aria-expanded', String(isOpen));
+    });
+    // close menu when a nav link is clicked
+    nav.addEventListener('click', function (e) {
+      if (e.target.classList.contains('nav-link')) {
+        nav.classList.remove('is-open');
+        btn.classList.remove('is-open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  /* --------------------------------------------------- footer driver link */
+  function initFooterLinks() {
+    var footerDriver = document.getElementById('footer-become-driver');
+    if (footerDriver) {
+      footerDriver.addEventListener('click', function (e) {
+        e.preventDefault();
+        openApplyModal();
+      });
+    }
+  }
+
   function boot() {
     initMap();
     refreshRiderEstimate();
     bindEvents();
+    initHamburger();
+    initScrollReveal();
+    initFooterLinks();
+    setTimeout(typeStep, 600);
     if (window.I18N) window.I18N.onChange(rerenderForLanguage);
     setConnection('', t('connecting…'));
     navigate();

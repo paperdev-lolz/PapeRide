@@ -86,6 +86,10 @@ public class WebsiteClient {
         this.json = new ObjectMapper();
     }
 
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
     /** Boot-time check: the website answers and reports a healthy database. */
     public void checkHealth() throws Exception {
         JsonNode body = request("GET", "/api/health", null);

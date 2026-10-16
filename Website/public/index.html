@@ -6,7 +6,7 @@
   <title>TBRide — Ride-Hailing &amp; Operator Dispatch</title>
   <meta name="description" content="TBRide: vanilla JS ride-hailing and operator dispatch platform (Node.js + Express + Socket.IO + PostgreSQL + Leaflet)" />
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="/styles.css?v=mobile-admin-1" />
+  <link rel="stylesheet" href="/styles.css?v=premium-responsive-1" />
 </head>
 <body>
   <header class="topbar">
@@ -18,6 +18,9 @@
       </span>
     </a>
 
+    <button class="hamburger" id="hamburger" type="button" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
     <nav class="main-nav" id="main-nav" aria-label="Main navigation">
       <a class="nav-link" href="#/" data-page="home">Home</a>
       <a class="nav-link role-tab is-active" href="#/rider" data-role="user" data-page="user">Rider</a>
@@ -35,6 +38,22 @@
         <span class="account-first-name" id="account-first-name"></span>
         <button class="btn ghost" id="header-signout" type="button">Sign Out</button>
       </div>
+      <a class="telegram-nav-btn" href="https://t.me/test_bot_bot_bot_bot_burner_bot" target="_blank" rel="noopener" title="Open Telegram Bot">
+        <svg class="tg-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.63 3.73-.53.36-1.02.54-1.45.53-.48-.01-1.4-.27-2.09-.49-.84-.27-1.51-.42-1.45-.89.03-.25.38-.5.98-.77 3.86-1.68 6.44-2.78 7.73-3.32 3.68-1.53 4.44-1.8 4.94-1.81.11 0 .35.03.51.16.13.11.17.26.19.37.02.14.02.3 0 .46z"/>
+        </svg>
+        <span>Telegram Bot</span>
+      </a>
+
+      <div class="theme-switch" id="theme-switch">
+        <button class="theme-btn" id="theme-toggle" type="button" title="Toggle Light/Dark Mode" aria-label="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <button class="theme-btn" id="open-settings" type="button" title="Settings & Appearance" aria-label="Open settings">
+          <span class="theme-icon">⚙️</span>
+        </button>
+      </div>
+
       <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
         <button class="lang-btn is-active" data-lang="en" type="button">EN</button>
         <button class="lang-btn" data-lang="ru" type="button">RU</button>
@@ -51,14 +70,20 @@
   <main class="app">
     <!-- ============================== HOME =============================== -->
     <section class="page page-home" id="page-home">
-      <div class="hero">
+      <div class="hero reveal">
         <div class="hero-copy">
           <span class="eyebrow">Tashkent · live operator dispatch</span>
-          <h1>Move across the city with confidence</h1>
+          <h1>Move across the city<br><span class="typing-wrap">with <span class="typing-text" id="typing-text"></span><span class="typing-cursor">|</span></span></h1>
           <p class="lead">TBRide puts riders, drivers and operators on one live board: request a trip, watch it get dispatched in real time and follow every ride on the map.</p>
           <div class="hero-actions">
             <a class="btn primary lg" href="#/rider">Book a ride</a>
             <button class="btn ghost lg" id="hero-become-driver" type="button">Become a Driver</button>
+            <a class="btn telegram-btn lg" href="https://t.me/test_bot_bot_bot_bot_burner_bot" target="_blank" rel="noopener">
+              <svg class="tg-svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.63 3.73-.53.36-1.02.54-1.45.53-.48-.01-1.4-.27-2.09-.49-.84-.27-1.51-.42-1.45-.89.03-.25.38-.5.98-.77 3.86-1.68 6.44-2.78 7.73-3.32 3.68-1.53 4.44-1.8 4.94-1.81.11 0 .35.03.51.16.13.11.17.26.19.37.02.14.02.3 0 .46z"/>
+              </svg>
+              <span>Order via Telegram Bot</span>
+            </a>
           </div>
           <ul class="hero-points">
             <li>Live dispatch board for operators</li>
@@ -67,14 +92,40 @@
           </ul>
         </div>
         <div class="hero-art" aria-hidden="true">
-          <div class="art-map"></div>
+          <div class="art-map">
+            <span class="map-road map-road-a"></span>
+            <span class="map-road map-road-b"></span>
+            <svg class="map-route" viewBox="0 0 520 300" preserveAspectRatio="none">
+              <path class="map-route-shadow" d="M70 215 C145 210 142 130 225 145 S330 220 390 125 S447 106 466 72" />
+              <path class="map-route-glow" d="M70 215 C145 210 142 130 225 145 S330 220 390 125 S447 106 466 72" />
+              <path class="map-route-core" d="M70 215 C145 210 142 130 225 145 S330 220 390 125 S447 106 466 72" />
+            </svg>
+            <span class="map-marker map-marker-start"><i></i></span>
+            <span class="map-marker map-marker-end"><i></i></span>
+            <span class="map-route-label">YOUR CITY, IN MOTION</span>
+          </div>
           <div class="art-card art-a"><b>4</b><span>role consoles</span></div>
           <div class="art-card art-b"><b>GPS</b><span>live ride tracking</span></div>
           <div class="art-card art-c"><b>3</b><span>languages</span></div>
         </div>
       </div>
 
-      <div class="section" id="console-directory">
+      <div class="proof-strip reveal" aria-label="Platform highlights">
+        <div class="proof-item">
+          <span class="proof-icon" aria-hidden="true">⌖</span>
+          <span><strong>Live ride visibility</strong><small>Follow trips on the map</small></span>
+        </div>
+        <div class="proof-item">
+          <span class="proof-icon" aria-hidden="true">⇄</span>
+          <span><strong>Connected dispatch</strong><small>Riders, drivers and operators</small></span>
+        </div>
+        <div class="proof-item">
+          <span class="proof-icon" aria-hidden="true">文</span>
+          <span><strong>Made for Tashkent</strong><small>English · Русский · O‘zbekcha</small></span>
+        </div>
+      </div>
+
+      <div class="section reveal" id="console-directory">
         <div class="section-head">
           <h2>One platform, four consoles</h2>
           <p>Pick the workspace that matches your role — every console is purpose-built.</p>
@@ -107,7 +158,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section reveal">
         <div class="section-head">
           <h2>How it works</h2>
           <p>Three steps from request to arrival.</p>
@@ -131,7 +182,71 @@
         </div>
       </div>
 
-      <div class="section">
+      <!-- Stats Counter Section -->
+      <div class="section reveal">
+        <div class="section-head">
+          <h2>Tashkent trusts TBRide</h2>
+          <p>Growing every day across the city.</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-block">
+            <span class="stat-number" data-target="12400">0</span>
+            <span class="stat-suffix">+</span>
+            <span class="stat-caption">Rides completed</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-number" data-target="340">0</span>
+            <span class="stat-suffix">+</span>
+            <span class="stat-caption">Active drivers</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-number" data-target="98">0</span>
+            <span class="stat-suffix">%</span>
+            <span class="stat-caption">Dispatch success rate</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-number" data-target="4">0</span>
+            <span class="stat-suffix"> min</span>
+            <span class="stat-caption">Average pickup time</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonials Section -->
+      <div class="section reveal">
+        <div class="section-head">
+          <h2>What riders say</h2>
+          <p>Real feedback from our Tashkent community.</p>
+        </div>
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"Finally a service where I can actually see the driver approaching. The live map tracking is incredible — it changed how I commute to work."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">A</div>
+              <div><strong>Aziza K.</strong><span>Daily rider · Mirzo Ulugbek</span></div>
+            </div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"The operator dispatch board is a game-changer. I manage 40+ drivers a shift and the drag-and-drop assignment makes it effortless."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">J</div>
+              <div><strong>Jamshid R.</strong><span>Dispatch operator · Sergeli</span></div>
+            </div>
+          </div>
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-text">"As a driver, the ride offers come in fast. GPS tracking works smoothly and the interface is clean. Best platform I've worked with in Tashkent."</p>
+            <div class="testimonial-author">
+              <div class="testimonial-avatar">D</div>
+              <div><strong>Dilshod M.</strong><span>Driver · Yunusobod</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section reveal">
         <div class="cta-band">
           <div>
             <h2>Drive with TBRide</h2>
@@ -141,9 +256,49 @@
         </div>
       </div>
 
-      <footer class="page-foot">
-        <span>TBRide · Tashkent</span>
-        <span>Node.js · Express · Socket.IO · PostgreSQL · Leaflet</span>
+      <footer class="site-footer reveal">
+        <div class="footer-grid">
+          <div class="footer-col footer-brand-col">
+            <div class="footer-brand">
+              <span class="brand-mark">TB</span>
+              <div>
+                <strong>TBRide</strong>
+                <small>Ride-hailing &amp; dispatch</small>
+              </div>
+            </div>
+            <p class="footer-tagline">Connecting Tashkent — riders, drivers, and operators on one live platform.</p>
+          </div>
+          <div class="footer-col">
+            <h4>Platform</h4>
+            <ul>
+              <li><a href="#/rider">Rider Console</a></li>
+              <li><a href="#/driver">Driver Console</a></li>
+              <li><a href="#/operator">Operator Dispatch</a></li>
+              <li><a href="#/admin">Admin Panel</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Resources</h4>
+            <ul>
+              <li><a href="#/" id="footer-become-driver">Become a Driver</a></li>
+              <li><a href="https://t.me/test_bot_bot_bot_bot_burner_bot" target="_blank" rel="noopener">Telegram Bot</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Tech Stack</h4>
+            <ul class="tech-badges">
+              <li><span class="tech-pill">Node.js</span></li>
+              <li><span class="tech-pill">Express</span></li>
+              <li><span class="tech-pill">Socket.IO</span></li>
+              <li><span class="tech-pill">PostgreSQL</span></li>
+              <li><span class="tech-pill">Leaflet</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>&copy; 2026 TBRide · Tashkent, Uzbekistan</span>
+          <span class="footer-powered">Built with ❤️ for Tashkent</span>
+        </div>
       </footer>
     </section>
 
@@ -170,30 +325,146 @@
               <strong id="rider-name">—</strong>
             </div>
           </div>
-          <p class="hint">Drag the markers on the map, or use the placement buttons below.</p>
-
-          <div class="row gap">
-            <button class="btn small" id="rider-mode-pickup" type="button">Set pickup</button>
-            <button class="btn small" id="rider-mode-dropoff" type="button">Set destination</button>
+          <div class="rider-search-box">
+            <div class="search-input-group">
+              <span class="search-dot pickup-dot"></span>
+              <input type="text" id="rider-search-pickup" class="smart-input" placeholder="Enter pickup address or landmark..." value="Amir Timur Square" />
+              <button class="btn icon-btn" id="rider-mode-pickup" type="button" title="Set on map">📍</button>
+            </div>
+            <div class="search-input-group">
+              <span class="search-dot dropoff-dot"></span>
+              <input type="text" id="rider-search-dropoff" class="smart-input" placeholder="Where to? (Destination)..." value="Tashkent International Airport" />
+              <button class="btn icon-btn" id="rider-mode-dropoff" type="button" title="Set on map">🏁</button>
+            </div>
           </div>
 
-          <dl class="kv">
-            <div><dt>Pickup</dt><dd id="rider-pickup-coords">41.299500, 69.240100</dd></div>
-            <div><dt>Destination</dt><dd id="rider-dropoff-coords">41.311100, 69.279700</dd></div>
-            <div><dt>Distance</dt><dd id="rider-quote-distance">—</dd></div>
-            <div><dt>Fare (est.)</dt><dd id="rider-quote-fare">—</dd></div>
-          </dl>
+          <div class="quick-destinations-wrap">
+            <span class="quick-label">Popular in Tashkent:</span>
+            <div class="quick-chips" id="quick-chips">
+              <button class="chip" type="button" data-lat="41.3111" data-lng="69.2797" data-name="Airport (TAS)">✈️ Airport</button>
+              <button class="chip" type="button" data-lat="41.3117" data-lng="69.2457" data-name="Tashkent City Park">🌳 Tashkent City</button>
+              <button class="chip" type="button" data-lat="41.3265" data-lng="69.2285" data-name="Chorsu Bazaar">🛍️ Chorsu</button>
+              <button class="chip" type="button" data-lat="41.3409" data-lng="69.2849" data-name="Tashkent Tower">🗼 TV Tower</button>
+              <button class="chip" type="button" data-lat="41.2995" data-lng="69.2401" data-name="Amir Timur Square">🏛️ Broadway</button>
+            </div>
+          </div>
 
-          <div class="row gap">
-            <button class="btn primary grow" id="rider-request-btn" type="button">Request ride</button>
-            <button class="btn danger grow" id="rider-cancel-btn" type="button" disabled>Cancel ride</button>
+          <!-- Ride Class Selector (Uber / Yandex Go style) -->
+          <div class="ride-tier-section">
+            <label class="tier-section-title">Select Ride Class</label>
+            <div class="ride-tiers" id="ride-tier-group" role="radiogroup">
+              <div class="ride-tier-card is-selected" data-tier="economy" tabindex="0">
+                <div class="tier-badge-eta" id="eta-economy">3 min</div>
+                <div class="tier-icon">🚗</div>
+                <div class="tier-info">
+                  <strong class="tier-name">Economy</strong>
+                  <span class="tier-desc">Affordable daily rides · Cobalt / Spark</span>
+                </div>
+                <div class="tier-price" id="price-economy">—</div>
+              </div>
+
+              <div class="ride-tier-card" data-tier="comfort" tabindex="0">
+                <div class="tier-badge-eta" id="eta-comfort">5 min</div>
+                <div class="tier-icon">🚘</div>
+                <div class="tier-info">
+                  <strong class="tier-name">Comfort</strong>
+                  <span class="tier-desc">Quiet cars &amp; AC · Lacetti / Gentra</span>
+                </div>
+                <div class="tier-price" id="price-comfort">—</div>
+              </div>
+
+              <div class="ride-tier-card" data-tier="business" tabindex="0">
+                <div class="tier-badge-eta" id="eta-business">7 min</div>
+                <div class="tier-icon">✨</div>
+                <div class="tier-info">
+                  <strong class="tier-name">Business</strong>
+                  <span class="tier-desc">Executive comfort · Malibu / Kia K5</span>
+                </div>
+                <div class="tier-price" id="price-business">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="trip-summary-pill">
+            <div class="summary-metric">
+              <span class="metric-label">Estimated Route</span>
+              <strong class="metric-val" id="rider-quote-distance">—</strong>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-label">Estimated Time</span>
+              <strong class="metric-val" id="rider-est-duration">—</strong>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-label">Selected Fare</span>
+              <strong class="metric-val fare-highlight" id="rider-quote-fare">—</strong>
+            </div>
+          </div>
+
+          <!-- Uber / Yandex Go: Payment Method & Ride Amenities (Quiet ride / AC / Luggage) -->
+          <div class="payment-and-options">
+            <div class="payment-selector-wrap">
+              <label class="tier-section-title">Payment Method</label>
+              <div class="payment-methods" id="payment-methods">
+                <button class="pay-btn is-active" data-pay="cash" type="button">💵 Cash</button>
+                <button class="pay-btn" data-pay="uzcard" type="button">💳 UzCard / Humo</button>
+                <button class="pay-btn" data-pay="click" type="button">📱 Click / Payme</button>
+              </div>
+            </div>
+
+            <div class="amenities-wrap">
+              <label class="tier-section-title">Trip Preferences</label>
+              <div class="amenity-toggles">
+                <label class="amenity-pill">
+                  <input type="checkbox" id="pref-quiet" />
+                  <span>🤫 Quiet Ride</span>
+                </label>
+                <label class="amenity-pill">
+                  <input type="checkbox" id="pref-ac" checked />
+                  <span>❄️ AC On</span>
+                </label>
+                <label class="amenity-pill">
+                  <input type="checkbox" id="pref-luggage" />
+                  <span>🧳 Luggage</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row gap mt-3">
+            <button class="btn primary lg grow uber-request-btn" id="rider-request-btn" type="button">
+              <span class="request-btn-text">Request Ride</span>
+              <span class="request-btn-sub" id="request-btn-sub">Instant dispatch</span>
+            </button>
+            <button class="btn danger lg grow" id="rider-cancel-btn" type="button" disabled>Cancel Ride</button>
           </div>
 
           <div class="ride-card hidden" id="rider-driver-card">
-            <h3>Assigned driver</h3>
-            <p id="rider-driver-name">—</p>
-            <p class="hint" id="rider-driver-vehicle">—</p>
-            <p class="mono" id="rider-driver-phone">—</p>
+            <div class="driver-card-header">
+              <div class="driver-avatar-circle">🚕</div>
+              <div class="driver-identity">
+                <h3 id="rider-driver-name">—</h3>
+                <span class="driver-vehicle-badge" id="rider-driver-vehicle">—</span>
+              </div>
+              <div class="driver-rating-badge">★ 4.96</div>
+            </div>
+            <div class="driver-contact-row">
+              <a class="driver-phone-link" id="rider-driver-phone-link" href="#">📞 <span id="rider-driver-phone">—</span></a>
+              <span class="eta-pill" id="driver-eta-status">Arriving in ~4 min</span>
+            </div>
+          </div>
+
+          <!-- Telegram Bot Sync Card -->
+          <div class="telegram-rider-banner">
+            <div class="tg-banner-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.63 3.73-.53.36-1.02.54-1.45.53-.48-.01-1.4-.27-2.09-.49-.84-.27-1.51-.42-1.45-.89.03-.25.38-.5.98-.77 3.86-1.68 6.44-2.78 7.73-3.32 3.68-1.53 4.44-1.8 4.94-1.81.11 0 .35.03.51.16.13.11.17.26.19.37.02.14.02.3 0 .46z"/>
+              </svg>
+            </div>
+            <div class="tg-banner-copy">
+              <strong>Order &amp; track on Telegram</strong>
+              <span>Use our Telegram Bot on the go with real-time status notifications.</span>
+            </div>
+            <a class="tg-banner-action" href="https://t.me/test_bot_bot_bot_bot_burner_bot" target="_blank" rel="noopener">Open Bot →</a>
           </div>
 
           <h3>Ride history</h3>
@@ -482,6 +753,100 @@
           <button class="btn primary" type="submit">Send application</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ======================= SETTINGS MODAL ========================= -->
+  <div class="modal-backdrop hidden" id="settings-modal">
+    <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-head">
+        <span class="page-icon">⚙️</span>
+        <div>
+          <h2 id="settings-title">App Settings &amp; Personalization</h2>
+          <p class="hint">Customize themes, map style, audio feedback, and trip preferences.</p>
+        </div>
+        <button class="btn ghost small" id="settings-close" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="settings-content">
+        <!-- Visual Themes -->
+        <div class="settings-section">
+          <h3>Visual Theme</h3>
+          <div class="theme-palette-grid">
+            <button class="theme-card is-active" data-app-theme="dark" type="button">
+              <span class="theme-preview dark-preview"></span>
+              <strong>Midnight (Dark)</strong>
+              <small>Cyberpunk dark &amp; neon</small>
+            </button>
+            <button class="theme-card" data-app-theme="light" type="button">
+              <span class="theme-preview light-preview"></span>
+              <strong>Daylight (Light)</strong>
+              <small>Clean paper white</small>
+            </button>
+            <button class="theme-card" data-app-theme="oled" type="button">
+              <span class="theme-preview oled-preview"></span>
+              <strong>OLED Pure Black</strong>
+              <small>Battery saver 100% black</small>
+            </button>
+            <button class="theme-card" data-app-theme="emerald" type="button">
+              <span class="theme-preview emerald-preview"></span>
+              <strong>Emerald Luxury</strong>
+              <small>Uber Black / Executive</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Map Layer Styles -->
+        <div class="settings-section">
+          <h3>Map Cartography</h3>
+          <div class="map-theme-grid">
+            <button class="map-theme-btn is-active" data-map-style="dark" type="button">
+              <span>🌃 Dark Matter</span>
+            </button>
+            <button class="map-theme-btn" data-map-style="voyager" type="button">
+              <span>🏙️ Voyager Streets</span>
+            </button>
+            <button class="map-theme-btn" data-map-style="satellite" type="button">
+              <span>🛰️ Satellite Imagery</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sound & Notifications -->
+        <div class="settings-section">
+          <h3>Audio &amp; Notifications</h3>
+          <div class="settings-toggles">
+            <label class="toggle-row">
+              <input type="checkbox" id="setting-sound" checked />
+              <div class="toggle-copy">
+                <strong>Audio Chimes</strong>
+                <span>Sound effect on ride offer, driver arrival and status update</span>
+              </div>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="setting-haptic" checked />
+              <div class="toggle-copy">
+                <strong>Haptic Vibration</strong>
+                <span>Tactile feedback on mobile devices for key actions</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Default Ride Class -->
+        <div class="settings-section">
+          <h3>Default Ride Tier</h3>
+          <select id="setting-default-tier" class="smart-select">
+            <option value="economy">Economy (Cobalt / Spark)</option>
+            <option value="comfort">Comfort (Lacetti / Gentra)</option>
+            <option value="business">Business (Malibu / K5)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions mt-3">
+        <button class="btn primary grow" id="settings-save" type="button">Save &amp; Apply</button>
+      </div>
     </div>
   </div>
 

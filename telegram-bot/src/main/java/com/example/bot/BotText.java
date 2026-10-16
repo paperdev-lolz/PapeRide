@@ -4,13 +4,17 @@ import java.util.Locale;
 
 enum BotText {
     WELCOME(
-            "🚗 *Welcome to PapeRide, %s!*\n\nI'll help you book a ride in seconds.\n\nTap /request to get started.\nTap /help to see all commands. Use /language to change language.",
-            "🚗 *Добро пожаловать в PapeRide, %s!*\n\nЯ помогу вам быстро заказать поездку.\n\nОтправьте /request, чтобы начать.\nОтправьте /help, чтобы увидеть команды. Используйте /language для смены языка.",
-            "🚗 *PapeRide'ga xush kelibsiz, %s!*\n\nMen sizga tezda safar buyurtma qilishga yordam beraman.\n\nBoshlash uchun /request yuboring.\nBuyruqlar uchun /help yuboring. Tilni o'zgartirish uchun /language yuboring."),
+            "🚗 *Welcome to PapeRide, %s!*\n\nI'll help you book a ride in seconds.\n\nTap /request to get started.\nTap /web to open our live web map & console.\nTap /help to see all commands. Use /language to change language.",
+            "🚗 *Добро пожаловать в PapeRide, %s!*\n\nЯ помогу вам быстро заказать поездку.\n\nОтправьте /request, чтобы начать.\nОтправьте /web, чтобы открыть карту и сайт.\nОтправьте /help, чтобы увидеть команды. Используйте /language для смены языка.",
+            "🚗 *PapeRide'ga xush kelibsiz, %s!*\n\nMen sizga tezda safar buyurtma qilishga yordam beraman.\n\nBoshlash uchun /request yuboring.\nXarita va saytni ochish uchun /web yuboring.\nBuyruqlar uchun /help yuboring. Tilni o'zgartirish uchun /language yuboring."),
     HELP(
-            "📋 *PapeRide Commands*\n\n/request — Book a new ride\n/rides — Your recent rides and live status\n/cancel — Cancel a request or active ride\n/language — Change language\n/help — Show this help",
-            "📋 *Команды PapeRide*\n\n/request — Заказать поездку\n/rides — Последние поездки и их статус\n/cancel — Отменить запрос или активную поездку\n/language — Сменить язык\n/help — Эта справка",
-            "📋 *PapeRide buyruqlari*\n\n/request — Yangi safar buyurtma qilish\n/rides — Oxirgi safarlar va ularning holati\n/cancel — So'rov yoki faol safarni bekor qilish\n/language — Tilni o'zgartirish\n/help — Yordam"),
+            "📋 *PapeRide Commands*\n\n/request — Book a new ride\n/web — Open website & live map\n/rides — Your recent rides and live status\n/cancel — Cancel a request or active ride\n/language — Change language\n/help — Show this help",
+            "📋 *Команды PapeRide*\n\n/request — Заказать поездку\n/web — Открыть сайт и живую карту\n/rides — Последние поездки и их статус\n/cancel — Отменить запрос или активную поездку\n/language — Сменить язык\n/help — Эта справка",
+            "📋 *PapeRide buyruqlari*\n\n/request — Yangi safar buyurtma qilish\n/web — Sayt va jonli xaritani ochish\n/rides — Oxirgi safarlar va ularning holati\n/cancel — So'rov yoki faol safarni bekor qilish\n/language — Tilni o'zgartirish\n/help — Yordam"),
+    WEB_LINK(
+            "🌐 *PapeRide Web Console & Live Map*\n\nTrack your rides in real time, view driver telematics, and use full interactive map features:\n👉 %s",
+            "🌐 *Веб-консоль и живая карта PapeRide*\n\nОтслеживайте поездки в реальном времени, наблюдайте за машинами и пользуйтесь интерактивной картой:\n👉 %s",
+            "🌐 *PapeRide veb-konsoli va jonli xarita*\n\nSafar va haydovchilarni jonli xaritada kuzating va to'liq interaktiv funksiyalardan foydalaning:\n👉 %s"),
     LANGUAGE_PROMPT(
             "🌐 Choose your language:",
             "🌐 Выберите язык:",

@@ -159,6 +159,10 @@ public class PapeRideBot extends TelegramLongPollingBot {
                 handleMyRides(chatId, msg.getFrom().getId());
                 return;
             }
+            if (text.startsWith("/web") || text.startsWith("/website") || text.startsWith("/map") || text.startsWith("/app")) {
+                handleWeb(chatId);
+                return;
+            }
         }
 
         // ── Conversation flow ────────────────────────────────
@@ -185,6 +189,24 @@ public class PapeRideBot extends TelegramLongPollingBot {
 
     private void handleHelp(long chatId) {
         send(chatId, text(chatId, BotText.HELP));
+    }
+
+    private void handleWeb(long chatId) {
+        String siteUrl = website.getBaseUrl();
+        if (siteUrl == null || siteUrl.isBlank()) {
+            siteUrl = "https://paperide-website.onrender.com";
+        }
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton button = new InlineKeyboardButton("🌐 Open PapeRide Web Console");
+        button.setUrl(siteUrl);
+        markup.setKeyboard(List.of(List.of(button)));
+
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text(chatId, BotText.WEB_LINK, siteUrl));
+        message.setReplyMarkup(markup);
+        executeSafe(message);
     }
 
     private void handleLanguage(long chatId) {
