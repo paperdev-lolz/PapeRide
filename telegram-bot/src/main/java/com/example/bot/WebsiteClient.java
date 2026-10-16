@@ -30,6 +30,8 @@ import java.util.List;
  * </pre>
  */
 public class WebsiteClient {
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration HEALTH_CHECK_TIMEOUT = Duration.ofSeconds(120);
 
     /** Raised for any non-2xx answer; carries the website's public message. */
     public static class ApiException extends Exception {
@@ -92,7 +94,7 @@ public class WebsiteClient {
 
     /** Boot-time check: the website answers and reports a healthy database. */
     public void checkHealth() throws Exception {
-        JsonNode body = request("GET", "/api/health", null);
+        JsonNode body = request("GET", "/api/health", null, HEALTH_CHECK_TIMEOUT);
         if (!body.path("ok").asBoolean(false)) {
             throw new ApiException(503, "website reports an unhealthy state");
         }
@@ -155,9 +157,13 @@ public class WebsiteClient {
     // -----------------------------------------------------------------------
 
     private JsonNode request(String method, String path, JsonNode body) throws Exception {
+        return request(method, path, body, REQUEST_TIMEOUT);
+    }
+
+    private JsonNode request(String method, String path, JsonNode body, Duration timeout) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
-                .timeout(Duration.ofSeconds(10))
+                .timeout(timeout)
                 .header("X-Telegram-Token", token)
                 .header("Accept", "application/json");
         if (body != null) {
