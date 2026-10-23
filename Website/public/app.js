@@ -130,6 +130,16 @@
 
   var mapTileLayer = null;
 
+  function triggerHaptic(pattern) {
+    var hapticEnabled = window.localStorage.getItem('paperide.setting.haptic') !== 'false';
+    if (!hapticEnabled) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(pattern || 35);
+      }
+    } catch (e) {}
+  }
+
   function playChime(kind) {
     var soundEnabled = window.localStorage.getItem('paperide.setting.sound') !== 'false';
     if (!soundEnabled) return;
@@ -155,12 +165,26 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
         osc.start(now);
         osc.stop(now + 0.32);
-      } else {
-        osc.frequency.setValueAtTime(400, now);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+      } else if (kind === 'arrived') {
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880, now + 0.14); // A5
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
         osc.start(now);
-        osc.stop(now + 0.2);
+        osc.stop(now + 0.4);
+      } else if (kind === 'cancel') {
+        osc.frequency.setValueAtTime(493.88, now); // B4
+        osc.frequency.exponentialRampToValueAtTime(329.63, now + 0.2); // E4
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else {
+        osc.frequency.setValueAtTime(440, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.12);
       }
     } catch (e) {}
   }
@@ -262,15 +286,36 @@
       ' · view: ' + role;
   }
 
-  var TASHKENT_LANDMARKS = [
-    { name: 'Amir Timur Square', lat: 41.2995, lng: 69.2401 },
-    { name: 'Tashkent International Airport (TAS)', lat: 41.2575, lng: 69.2812 },
-    { name: 'Tashkent City Park', lat: 41.3117, lng: 69.2457 },
-    { name: 'Chorsu Bazaar', lat: 41.3265, lng: 69.2285 },
-    { name: 'Tashkent TV Tower', lat: 41.3409, lng: 69.2849 },
-    { name: 'Magic City', lat: 41.3032, lng: 69.2476 },
-    { name: 'Tashkent Central Railway Station (Severny)', lat: 41.2917, lng: 69.2842 }
+  var DESTINATIONS = [
+    { name: 'Amir Timur Square', lat: 41.2995, lng: 69.2401, cat: 'Tashkent' },
+    { name: 'Tashkent International Airport (TAS)', lat: 41.2575, lng: 69.2812, cat: 'Tashkent' },
+    { name: 'Tashkent City Park', lat: 41.3117, lng: 69.2457, cat: 'Tashkent' },
+    { name: 'Chorsu Bazaar', lat: 41.3265, lng: 69.2285, cat: 'Tashkent' },
+    { name: 'Tashkent TV Tower', lat: 41.3409, lng: 69.2849, cat: 'Tashkent' },
+    { name: 'Magic City', lat: 41.3032, lng: 69.2476, cat: 'Tashkent' },
+    { name: 'Tashkent Central Railway Station (Severny)', lat: 41.2917, lng: 69.2842, cat: 'Tashkent' },
+    { name: 'Chartaq (Chortoq)', lat: 41.0667, lng: 71.8167, cat: 'Namangan' },
+    { name: 'Namangan City', lat: 41.0011, lng: 71.6726, cat: 'Namangan' },
+    { name: 'Andijan City', lat: 40.7821, lng: 72.3442, cat: 'Andijan' },
+    { name: 'Fergana City', lat: 40.3864, lng: 71.7864, cat: 'Fergana' },
+    { name: 'Kokand City', lat: 40.5286, lng: 70.9425, cat: 'Fergana' },
+    { name: 'Margilan City', lat: 40.4719, lng: 71.7231, cat: 'Fergana' },
+    { name: 'Samarkand City', lat: 39.6547, lng: 66.9597, cat: 'Samarkand' },
+    { name: 'Registan Square', lat: 39.6542, lng: 66.9750, cat: 'Samarkand' },
+    { name: 'Bukhara City', lat: 39.7681, lng: 64.4556, cat: 'Bukhara' },
+    { name: 'Khiva (Itchan Kala)', lat: 41.3775, lng: 60.3642, cat: 'Khorezm' },
+    { name: 'Urgench City', lat: 41.5500, lng: 60.6333, cat: 'Khorezm' },
+    { name: 'Nukus City', lat: 42.4731, lng: 59.6103, cat: 'Karakalpakstan' },
+    { name: 'Termez City', lat: 37.2242, lng: 67.2783, cat: 'Surkhandarya' },
+    { name: 'Qarshi City', lat: 38.8606, lng: 65.7890, cat: 'Kashkadarya' },
+    { name: 'Jizzakh City', lat: 40.1158, lng: 67.8422, cat: 'Jizzakh' },
+    { name: 'Gulistan City', lat: 40.4897, lng: 68.7842, cat: 'Sirdarya' },
+    { name: 'Navoi City', lat: 40.0844, lng: 65.3792, cat: 'Navoi' },
+    { name: 'Chirchiq City', lat: 41.4689, lng: 69.5822, cat: 'Tashkent Region' },
+    { name: 'Angren City', lat: 41.0167, lng: 70.1436, cat: 'Tashkent Region' },
+    { name: 'Bekabad City', lat: 40.2208, lng: 69.2589, cat: 'Tashkent Region' }
   ];
+  var TASHKENT_LANDMARKS = DESTINATIONS;
 
   function findNearestLandmark(p) {
     if (!p) return 'Selected Location';
@@ -755,6 +800,16 @@
     if (!ride) return;
     state.rider.activeRide = ['pending', 'assigned', 'in_progress'].indexOf(ride.status) !== -1 ? ride : null;
     renderRiderRide(ride);
+    if (ride.stage === 'arrived') {
+      playChime('arrived');
+      triggerHaptic([80, 40, 80]);
+    } else if (ride.status === 'completed') {
+      playChime('success');
+      triggerHaptic([100, 50, 100]);
+    } else if (ride.status === 'assigned') {
+      playChime('accept');
+      triggerHaptic(50);
+    }
     toast(title || t('Ride update'), t('status: {status}', { status: t(ride.status) }), ride.status === 'cancelled' ? 'error' : 'success');
   }
 
@@ -777,6 +832,19 @@
       setText('#rider-driver-vehicle', (ride.vehicleModel || '') + ' · ' + (ride.licensePlate || '') +
         ' · ' + (ride.quote ? ride.quote.fare.toLocaleString('en-US') + ' UZS' : ''));
       setText('#rider-driver-phone', ride.driverPhone || '');
+      var etaEl = $('#driver-eta-status');
+      if (etaEl) {
+        if (ride.stage === 'arrived') {
+          etaEl.textContent = t('Driver has arrived! Meet at pickup');
+          etaEl.classList.add('arrived-pulse');
+        } else if (ride.status === 'in_progress') {
+          etaEl.textContent = t('Trip in progress');
+          etaEl.classList.remove('arrived-pulse');
+        } else {
+          etaEl.textContent = t('Arriving in ~4 min');
+          etaEl.classList.remove('arrived-pulse');
+        }
+      }
       if (ride.driverLocation) setRiderDriverMarker(ride.driverLocation);
       var target = ride.status === 'in_progress' ? ride.dropoff : ride.pickup;
       map.panTo([target.lat, target.lng]);
@@ -824,9 +892,13 @@
       if (ack && ack.ok) {
         state.rider.activeRide = ack.data.ride;
         renderRiderRide(ack.data.ride);
+        playChime('accept');
+        triggerHaptic(50);
         toast(t('Ride requested'), t('waiting for an operator…'), 'success');
         logEvent('user:request_ride ok ' + short(ack.data.ride.id));
       } else if (ack && ack.error) {
+        playChime('cancel');
+        triggerHaptic(60);
         toast(t('Request rejected'), ack.error.message, 'error');
       }
     });
@@ -838,6 +910,8 @@
     if (!session || !session.socket || !ride) return;
     session.socket.emit('user:cancel_ride', { ride_id: ride.id, reason: 'rider_cancelled' }, function (ack) {
       if (ack && ack.ok) {
+        playChime('cancel');
+        triggerHaptic(60);
         toast(t('Ride cancelled'), t('before driver arrival'), 'warn');
         state.rider.activeRide = null;
         renderRiderRide(ack.data.ride);
@@ -1099,6 +1173,8 @@
   function onDriverOffer(payload) {
     state.driver.offer = payload.ride;
     renderDriverOffer();
+    playChime('offer');
+    triggerHaptic([120, 60, 120]);
     toast(t('New ride offer'), (payload.ride.riderName || t('rider')) + ' · ' +
       payload.ride.quote.distanceKm + ' km · ' + money(payload.ride.quote.fare), 'success');
     if (payload.ride.pickup) map.panTo([payload.ride.pickup.lat, payload.ride.pickup.lng]);
@@ -1123,8 +1199,16 @@
     } else {
       state.driver.activeRide = null;
       state.driver.offer = null;
-      if (ride.status === 'completed') toast(t('Ride completed'), money(ride.quote ? ride.quote.fare : 0), 'success');
-      if (ride.status === 'cancelled') toast(t('Ride cancelled'), payload.stage || '', 'error');
+      if (ride.status === 'completed') {
+        playChime('success');
+        triggerHaptic([100, 50, 100]);
+        toast(t('Ride completed'), money(ride.quote ? ride.quote.fare : 0), 'success');
+      }
+      if (ride.status === 'cancelled') {
+        playChime('cancel');
+        triggerHaptic(60);
+        toast(t('Ride cancelled'), payload.stage || '', 'error');
+      }
       refreshSession('driver');
     }
     renderDriverOffer();
@@ -1674,37 +1758,6 @@
     });
   }
 
-  function bindEvents() {
-    var luckySpinButton = $('#lucky-spin');
-    var luckyWheel = $('#lucky-wheel');
-    var luckyResult = $('#lucky-result');
-    var luckyRotation = 0;
-    var luckyRewards = [
-      '1,000,000 imaginary UZS',
-      'An imaginary free ride to the Moon',
-      'Unlimited pretend snacks',
-      'A golden sticker (100% pretend)',
-      'One premium high-five',
-      'Nothing but pretend bragging rights'
-    ];
-    if (luckySpinButton && luckyWheel && luckyResult) {
-      luckySpinButton.addEventListener('click', function () {
-        var reducedMotion = window.matchMedia &&
-          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        luckyRotation += 1080 + Math.random() * 360;
-        var reward = luckyRewards[Math.floor(Math.random() * luckyRewards.length)];
-        luckySpinButton.disabled = true;
-        luckyWheel.style.transform = 'rotate(' + luckyRotation + 'deg)';
-        luckyResult.textContent = t('Spinning…');
-        window.setTimeout(function () {
-          luckyResult.textContent = t('FAKE REWARD: {reward} — just a joke, no real value.', {
-            reward: t(reward)
-          });
-          luckySpinButton.disabled = false;
-        }, reducedMotion ? 0 : 2400);
-      });
-    }
-
     // hash routing: nav links are anchors, so the browser drives the router.
     $all('.nav-link').forEach(function (link) {
       link.addEventListener('click', function (e) {
@@ -1781,6 +1834,8 @@
         });
         var snd = $('#setting-sound');
         if (snd) snd.checked = window.localStorage.getItem('paperide.setting.sound') !== 'false';
+        var hap = $('#setting-haptic');
+        if (hap) hap.checked = window.localStorage.getItem('paperide.setting.haptic') !== 'false';
         var defTier = $('#setting-default-tier');
         if (defTier) defTier.value = window.localStorage.getItem('paperide.setting.defaultTier') || 'economy';
       }
@@ -1824,6 +1879,8 @@
       settingsSaveBtn.addEventListener('click', function () {
         var snd = $('#setting-sound');
         if (snd) window.localStorage.setItem('paperide.setting.sound', snd.checked ? 'true' : 'false');
+        var hap = $('#setting-haptic');
+        if (hap) window.localStorage.setItem('paperide.setting.haptic', hap.checked ? 'true' : 'false');
         var defTier = $('#setting-default-tier');
         if (defTier) {
           window.localStorage.setItem('paperide.setting.defaultTier', defTier.value);
@@ -1838,6 +1895,7 @@
         closeSettings();
         toast(t('Settings saved'), t('Personalization applied'), 'success');
         playChime('accept');
+        triggerHaptic([40, 40]);
       });
     }
 
@@ -1909,6 +1967,8 @@
         $all('.ride-tier-card').forEach(function (c) { c.classList.remove('is-selected'); });
         card.classList.add('is-selected');
         state.rider.tier = card.getAttribute('data-tier') || 'economy';
+        triggerHaptic(20);
+        playChime('tap');
         refreshRiderEstimate();
       });
       card.addEventListener('keydown', function (e) {
@@ -1928,6 +1988,8 @@
         if (!isNaN(lat) && !isNaN(lng)) {
           state.rider.dropoff = { lat: lat, lng: lng, name: name };
           state.rider.dropoffMarker.setLatLng([lat, lng]);
+          triggerHaptic(25);
+          playChime('tap');
           refreshRiderEstimate();
           map.panTo([lat, lng]);
           toast(t('Destination set'), name, 'success');
@@ -1941,27 +2003,93 @@
         $all('.payment-methods .pay-btn').forEach(function (b) { b.classList.remove('is-active'); });
         btn.classList.add('is-active');
         state.rider.paymentMethod = btn.getAttribute('data-pay') || 'cash';
+        triggerHaptic(20);
+        playChime('tap');
         toast(t('Payment selected'), btn.textContent.trim(), 'success');
       });
     });
 
-    // Smart Address Inputs
+    // Smart Address Inputs with destination search
     var pInput = $('#rider-search-pickup');
     var dInput = $('#rider-search-dropoff');
-    if (pInput) {
-      pInput.addEventListener('focus', function () { pInput._hasFocus = true; });
-      pInput.addEventListener('blur', function () { pInput._hasFocus = false; });
-      pInput.addEventListener('change', function () {
-        state.rider.pickup.name = pInput.value.trim();
+    function setupSearch(input, resultsId, kind) {
+      if (!input) return;
+      var results = document.getElementById(resultsId);
+      function renderList(q) {
+        if (!results) return;
+        var query = (q || '').trim().toLowerCase();
+        results.innerHTML = '';
+        if (!query) { results.style.display = 'none'; return; }
+        var matches = DESTINATIONS.filter(function (d) { return d.name.toLowerCase().indexOf(query) !== -1 || (d.cat || '').toLowerCase().indexOf(query) !== -1; }).slice(0, 8);
+        if (!matches.length) {
+          var empty = document.createElement('div');
+          empty.className = 'search-empty';
+          empty.textContent = 'No destinations found';
+          results.appendChild(empty);
+          results.style.display = 'block';
+          return;
+        }
+        matches.forEach(function (d) {
+          var item = document.createElement('div');
+          item.className = 'search-item';
+          item.innerHTML = '<span class="si-name">' + d.name + '</span><span class="si-cat">' + (d.cat || '') + '</span>';
+          item.addEventListener('mousedown', function (e) { e.preventDefault(); });
+          item.addEventListener('click', function () {
+            if (kind === 'pickup') {
+              state.rider.pickup = { lat: d.lat, lng: d.lng, name: d.name };
+              if (state.rider.pickupMarker) state.rider.pickupMarker.setLatLng([d.lat, d.lng]);
+            } else {
+              state.rider.dropoff = { lat: d.lat, lng: d.lng, name: d.name };
+              if (state.rider.dropoffMarker) state.rider.dropoffMarker.setLatLng([d.lat, d.lng]);
+            }
+            input.value = d.name;
+            input._hasFocus = false;
+            results.style.display = 'none';
+            if (typeof refreshRiderEstimate === 'function') refreshRiderEstimate();
+            if (typeof map !== 'undefined' && map && map.panTo) map.panTo([d.lat, d.lng]);
+            try { if (window.TBRide && window.TBRide.state) {} } catch (e) {}
+          });
+          results.appendChild(item);
+        });
+        results.style.display = 'block';
+      }
+      input.addEventListener('focus', function () { input._hasFocus = true; renderList(input.value); });
+      input.addEventListener('input', function () { renderList(input.value); });
+      input.addEventListener('blur', function () { input._hasFocus = false; setTimeout(function () { if (results) results.style.display = 'none'; }, 150); });
+      input.addEventListener('change', function () {
+        if (kind === 'pickup') state.rider.pickup.name = input.value.trim();
+        else state.rider.dropoff.name = input.value.trim();
       });
     }
-    if (dInput) {
-      dInput.addEventListener('focus', function () { dInput._hasFocus = true; });
-      dInput.addEventListener('blur', function () { dInput._hasFocus = false; });
-      dInput.addEventListener('change', function () {
-        state.rider.dropoff.name = dInput.value.trim();
+    setupSearch(pInput, 'pickup-results', 'pickup');
+    setupSearch(dInput, 'dropoff-results', 'dropoff');
+
+    var findMeBtn = $('#rider-find-me');
+    if (findMeBtn) {
+      findMeBtn.addEventListener('click', function () {
+        if (!navigator.geolocation) { toast(t('Unsupported'), t('No Geolocation API in this browser'), 'error'); return; }
+        findMeBtn.disabled = true;
+        findMeBtn.textContent = '📍 Locating…';
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          var lat = pos.coords.latitude, lng = pos.coords.longitude;
+          var name = findNearestLandmark({ lat: lat, lng: lng });
+          state.rider.pickup = { lat: lat, lng: lng, name: name };
+          if (state.rider.pickupMarker) state.rider.pickupMarker.setLatLng([lat, lng]);
+          if (pInput) pInput.value = name;
+          if (typeof refreshRiderEstimate === 'function') refreshRiderEstimate();
+          if (typeof map !== 'undefined' && map && map.panTo) map.panTo([lat, lng]);
+          toast(t('Pickup set'), name, 'success');
+          findMeBtn.disabled = false;
+          findMeBtn.textContent = '📍 Find my location';
+        }, function (err) {
+          toast(t('GPS error'), err.message, 'error');
+          findMeBtn.disabled = false;
+          findMeBtn.textContent = '📍 Find my location';
+        }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 });
       });
     }
+
+  function bindEvents() {
 
     // driver
     $('#dr-toggle').addEventListener('click', toggleDriverOnline);

@@ -6,7 +6,7 @@
   <title>TBRide — Ride-Hailing &amp; Operator Dispatch</title>
   <meta name="description" content="TBRide: vanilla JS ride-hailing and operator dispatch platform (Node.js + Express + Socket.IO + PostgreSQL + Leaflet)" />
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="/styles.css?v=premium-responsive-1" />
+  <link rel="stylesheet" href="/styles.css?v=premium-responsive-2" />
 </head>
 <body>
   <header class="topbar">
@@ -124,25 +124,6 @@
           <span><strong>Made for Tashkent</strong><small>English · Русский · O‘zbekcha</small></span>
         </div>
       </div>
-
-      <section class="section reveal lucky-section" aria-labelledby="lucky-title">
-        <div class="lucky-card">
-          <div class="lucky-copy">
-            <span class="eyebrow">Just for fun</span>
-            <h2 id="lucky-title">Omadli Charxpalak</h2>
-            <p>Spin for a completely imaginary reward. For laughs only—nothing is real or redeemable.</p>
-            <p class="lucky-warning">Fake rewards only. No real money, discounts, or ride credits.</p>
-            <button class="btn primary" id="lucky-spin" type="button">Spin the wheel</button>
-            <p class="lucky-result" id="lucky-result" role="status" aria-live="polite">Give it a spin!</p>
-          </div>
-          <div class="lucky-wheel-wrap">
-            <span class="lucky-pointer" aria-hidden="true"></span>
-            <div class="lucky-wheel" id="lucky-wheel" aria-hidden="true">
-              <span class="lucky-wheel-center">☀</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <div class="section reveal" id="console-directory">
         <div class="section-head">
@@ -345,16 +326,19 @@
             </div>
           </div>
           <div class="rider-search-box">
-            <div class="search-input-group">
+            <div class="search-input-group" style="position:relative">
               <span class="search-dot pickup-dot"></span>
-              <input type="text" id="rider-search-pickup" class="smart-input" placeholder="Enter pickup address or landmark..." value="Amir Timur Square" />
+              <input type="text" id="rider-search-pickup" class="smart-input" placeholder="Search pickup destination..." value="Amir Timur Square" autocomplete="off" />
               <button class="btn icon-btn" id="rider-mode-pickup" type="button" title="Set on map">📍</button>
             </div>
-            <div class="search-input-group">
+            <div class="search-results" id="pickup-results"></div>
+            <button class="btn ghost small" id="rider-find-me" type="button" style="margin:6px 0 10px">📍 Find my location</button>
+            <div class="search-input-group" style="position:relative">
               <span class="search-dot dropoff-dot"></span>
-              <input type="text" id="rider-search-dropoff" class="smart-input" placeholder="Where to? (Destination)..." value="Tashkent International Airport" />
+              <input type="text" id="rider-search-dropoff" class="smart-input" placeholder="Search destination (e.g. Chartaq)..." value="Tashkent International Airport" autocomplete="off" />
               <button class="btn icon-btn" id="rider-mode-dropoff" type="button" title="Set on map">🏁</button>
             </div>
+            <div class="search-results" id="dropoff-results"></div>
           </div>
 
           <div class="quick-destinations-wrap">
@@ -873,7 +857,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/i18n.js?v=product-improvements-1"></script>
-  <script src="/app.js?v=product-improvements-1"></script>
+  <script src="/i18n.js?v=product-improvements-2"></script>
+  <script src="/app.js?v=product-improvements-2"></script>
 </body>
 </html>
