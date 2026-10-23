@@ -1675,6 +1675,36 @@
   }
 
   function bindEvents() {
+    var luckySpinButton = $('#lucky-spin');
+    var luckyWheel = $('#lucky-wheel');
+    var luckyResult = $('#lucky-result');
+    var luckyRotation = 0;
+    var luckyRewards = [
+      '1,000,000 imaginary UZS',
+      'An imaginary free ride to the Moon',
+      'Unlimited pretend snacks',
+      'A golden sticker (100% pretend)',
+      'One premium high-five',
+      'Nothing but pretend bragging rights'
+    ];
+    if (luckySpinButton && luckyWheel && luckyResult) {
+      luckySpinButton.addEventListener('click', function () {
+        var reducedMotion = window.matchMedia &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        luckyRotation += 1080 + Math.random() * 360;
+        var reward = luckyRewards[Math.floor(Math.random() * luckyRewards.length)];
+        luckySpinButton.disabled = true;
+        luckyWheel.style.transform = 'rotate(' + luckyRotation + 'deg)';
+        luckyResult.textContent = t('Spinning…');
+        window.setTimeout(function () {
+          luckyResult.textContent = t('FAKE REWARD: {reward} — just a joke, no real value.', {
+            reward: t(reward)
+          });
+          luckySpinButton.disabled = false;
+        }, reducedMotion ? 0 : 2400);
+      });
+    }
+
     // hash routing: nav links are anchors, so the browser drives the router.
     $all('.nav-link').forEach(function (link) {
       link.addEventListener('click', function (e) {
