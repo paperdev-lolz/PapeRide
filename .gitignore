@@ -17,3 +17,5 @@
 **/.next/
 **/cp.txt
 Website/tsconfig.tsbuildinfo
+
+**/next-env.d.ts

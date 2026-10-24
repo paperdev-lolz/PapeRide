@@ -15,7 +15,7 @@
 const express = require('express');
 const telegramService = require('../../services/telegram.service');
 const { requireTelegramToken } = require('../middleware/telegram.middleware');
-const { ValidationError } = require('../../utils/errors');
+const { ValidationError, NotFoundError } = require('../../utils/errors');
 const { assertUuid } = require('../../utils/validation');
 
 const router = express.Router();
@@ -68,6 +68,27 @@ router.post('/rides/:id/cancel', async (req, res, next) => {
     const telegramUserId = (req.body || {}).telegram_user_id;
     const result = await telegramService.cancelRide(telegramUserId, rideId);
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** GET /api/telegram/rides/:id/driver-contact — driver phone for a ride (bot). */
+router.get('/rides/:id/driver-contact', async (req, res, next) => {
+  try {
+    const rideId = assertUuid(req.params.id, 'ride id');
+    const { serialiseRide } = require('../../realtime/snapshots');
+    const ridesRepo = require('../../repositories/rides.repository');
+    const ride = await ridesRepo.findById(rideId);
+    if (!ride) throw new NotFoundError('Ride not found');
+    const s = serialiseRide(ride);
+    res.json({
+      rideId: s.id,
+      driverPhone: s.driverPhone || null,
+      driverName: s.driverName || null,
+      vehicleModel: s.vehicleModel || null,
+      licensePlate: s.licensePlate || null,
+    });
   } catch (err) {
     next(err);
   }

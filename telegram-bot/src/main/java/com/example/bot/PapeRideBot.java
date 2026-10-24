@@ -1,6 +1,7 @@
 package com.example.bot;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Location;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -32,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  * PapeRideBot — a ride-request Telegram bot.
  *
  * Flow:
- *   1. User sends /request
+ *   1. User sends /request (or shares location directly)
  *   2. Bot asks for pickup location (text or 📍 share-location button)
  *   3. Bot asks for destination
  *   4. Bot shows a summary and Confirm / Cancel inline buttons
@@ -113,7 +114,7 @@ public class PapeRideBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        // Handle inline-keyboard button presses (Confirm / Cancel)
+        // Handle inline-keyboard button presses (Confirm / Cancel / Quick Actions)
         if (update.hasCallbackQuery()) {
             handleCallback(update.getCallbackQuery());
             return;
@@ -163,6 +164,38 @@ public class PapeRideBot extends TelegramLongPollingBot {
                 handleWeb(chatId);
                 return;
             }
+            if (text.startsWith("/about")) {
+                handleAbout(chatId);
+                return;
+            }
+            if (text.startsWith("/contact")) {
+                handleContact(chatId);
+                return;
+            }
+            if (text.startsWith("/estimate")) {
+                handleEstimate(chatId, msg.getFrom().getId());
+                return;
+            }
+            if (text.startsWith("/rate")) {
+                handleRate(chatId, msg.getFrom().getId());
+                return;
+            }
+            if (text.startsWith("/emergency")) {
+                handleEmergency(chatId);
+                return;
+            }
+            if (text.startsWith("/share")) {
+                handleShare(chatId, msg.getFrom().getId());
+                return;
+            }
+            if (text.startsWith("/favorite")) {
+                handleFavorite(chatId, msg.getFrom().getId());
+                return;
+            }
+            if (text.startsWith("/miniapp")) {
+                handleMiniapp(chatId);
+                return;
+            }
         }
 
         // ── Conversation flow ────────────────────────────────
@@ -171,6 +204,11 @@ public class PapeRideBot extends TelegramLongPollingBot {
             case WAITING_FOR_DESTINATION -> handleDestinationReply(chatId, msg);
             case WAITING_FOR_CONFIRMATION -> send(chatId, text(chatId, BotText.USE_BUTTONS));
             default -> {
+                Location loc = sharedLocation(msg);
+                if (loc != null) {
+                    startRideWithPickup(chatId, msg, loc);
+                    return;
+                }
                 // Not in a flow — nudge them
                 if (msg.hasText()) {
                     send(chatId, text(chatId, BotText.NUDGE));
@@ -183,12 +221,66 @@ public class PapeRideBot extends TelegramLongPollingBot {
     //  COMMAND HANDLERS
     // ═══════════════════════════════════════════════════════════
 
+    private InlineKeyboardMarkup createQuickActionsMarkup(long chatId) {
+        String siteUrl = website.getBaseUrl();
+        if (siteUrl == null || siteUrl.isBlank()) {
+            siteUrl = "https://paperide-website.onrender.com";
+        }
+
+        InlineKeyboardButton bookBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_REQUEST_RIDE));
+        bookBtn.setCallbackData("action:request");
+
+        InlineKeyboardButton miniAppBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_MINIAPP));
+        miniAppBtn.setUrl("https://t.me/paperide_bot/PapeRide");
+
+        InlineKeyboardButton webBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_WEB_CONSOLE));
+        webBtn.setUrl(siteUrl);
+
+        InlineKeyboardButton ridesBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_MY_RIDES));
+        ridesBtn.setCallbackData("action:rides");
+
+        InlineKeyboardButton langBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_LANGUAGE));
+        langBtn.setCallbackData("action:language");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(
+                List.of(bookBtn, miniAppBtn),
+                List.of(webBtn, ridesBtn),
+                List.of(langBtn)
+        ));
+        return markup;
+    }
+
     private void handleStart(long chatId, String firstName) {
-        send(chatId, text(chatId, BotText.WELCOME, firstName == null ? "" : firstName));
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text(chatId, BotText.WELCOME, firstName == null ? "" : firstName));
+        message.enableMarkdown(true);
+        message.setReplyMarkup(createQuickActionsMarkup(chatId));
+        executeSafe(message);
     }
 
     private void handleHelp(long chatId) {
-        send(chatId, text(chatId, BotText.HELP));
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text(chatId, BotText.HELP));
+        message.enableMarkdown(true);
+        message.setReplyMarkup(createQuickActionsMarkup(chatId));
+        executeSafe(message);
+    }
+
+    private void handleMiniapp(long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton miniAppButton = new InlineKeyboardButton(text(chatId, BotText.BTN_MINIAPP));
+        miniAppButton.setUrl("https://t.me/paperide_bot/PapeRide");
+        markup.setKeyboard(List.of(List.of(miniAppButton)));
+
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text(chatId, BotText.MINIAPP_PROMPT));
+        message.enableMarkdown(true);
+        message.setReplyMarkup(markup);
+        executeSafe(message);
     }
 
     private void handleWeb(long chatId) {
@@ -198,15 +290,46 @@ public class PapeRideBot extends TelegramLongPollingBot {
         }
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        InlineKeyboardButton button = new InlineKeyboardButton("🌐 Open PapeRide Web Console");
-        button.setUrl(siteUrl);
-        markup.setKeyboard(List.of(List.of(button)));
+        InlineKeyboardButton websiteButton = new InlineKeyboardButton(text(chatId, BotText.BTN_WEB_CONSOLE));
+        websiteButton.setUrl(siteUrl);
+        InlineKeyboardButton miniAppButton = new InlineKeyboardButton(text(chatId, BotText.BTN_MINIAPP));
+        miniAppButton.setUrl("https://t.me/paperide_bot/PapeRide");
+        markup.setKeyboard(List.of(List.of(websiteButton), List.of(miniAppButton)));
 
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(text(chatId, BotText.WEB_LINK, siteUrl));
+        message.enableMarkdown(true);
         message.setReplyMarkup(markup);
         executeSafe(message);
+    }
+
+    private void handleAbout(long chatId) {
+        sendPlain(chatId, "PapeRide — ride-hailing via Telegram. Book rides, track status, cancel anytime. Website: " + website.getBaseUrl());
+    }
+
+    private void handleContact(long chatId) {
+        sendPlain(chatId, "Support: contact the operator via the website or reply here. We'll get back to you.");
+    }
+
+    private void handleEstimate(long chatId, long telegramUserId) {
+        send(chatId, text(chatId, BotText.ESTIMATE));
+    }
+
+    private void handleRate(long chatId, long telegramUserId) {
+        send(chatId, text(chatId, BotText.RATE));
+    }
+
+    private void handleEmergency(long chatId) {
+        send(chatId, text(chatId, BotText.EMERGENCY));
+    }
+
+    private void handleShare(long chatId, long telegramUserId) {
+        send(chatId, text(chatId, BotText.SHARE));
+    }
+
+    private void handleFavorite(long chatId, long telegramUserId) {
+        send(chatId, text(chatId, BotText.FAVORITE));
     }
 
     private void handleLanguage(long chatId) {
@@ -310,6 +433,28 @@ public class PapeRideBot extends TelegramLongPollingBot {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(text(chatId, BotText.PROMPT_PICKUP));
+        message.enableMarkdown(true);
+        message.setReplyMarkup(locationKeyboard(chatId));
+        executeSafe(message);
+    }
+
+    /** Quick start when a user shares location without typing /request first. */
+    private void startRideWithPickup(long chatId, Message msg, Location loc) {
+        RideRequest req = new RideRequest();
+        req.setPickupLat(loc.getLatitude());
+        req.setPickupLon(loc.getLongitude());
+        String venueLabel = sharedLocationLabel(msg);
+        if (venueLabel != null && !venueLabel.isBlank()) {
+            req.setPickupLocation(venueLabel);
+        } else {
+            req.setPickupLocation(text(chatId, BotText.SHARED_LOCATION));
+        }
+        chatRequests.put(chatId, req);
+        chatStates.put(chatId, ConversationState.WAITING_FOR_DESTINATION);
+
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text(chatId, BotText.AUTO_PICKUP_SET, req.getPickupDisplay()));
         message.enableMarkdown(true);
         message.setReplyMarkup(locationKeyboard(chatId));
         executeSafe(message);
@@ -419,16 +564,59 @@ public class PapeRideBot extends TelegramLongPollingBot {
         executeSafe(message);
     }
 
-    /** Step 4 — handle Confirm / Cancel button press. */
+    /** Step 4 — handle Confirm / Cancel / Action button press. */
     private void handleCallback(CallbackQuery cb) {
         long chatId = cb.getMessage().getChatId();
         int messageId = cb.getMessage().getMessageId();
         String data = cb.getData();
 
+        answerCallbackQuery(cb.getId());
+
         if (data != null && data.startsWith("language:")) {
             BotLanguage selected = BotLanguage.fromCode(data.substring("language:".length()));
             chatLanguages.put(chatId, selected);
             answerAndEdit(chatId, messageId, text(chatId, BotText.LANGUAGE_CHANGED));
+            return;
+        }
+
+        if ("action:request".equals(data)) {
+            startRideRequest(chatId);
+            return;
+        }
+        if ("action:rides".equals(data)) {
+            handleMyRides(chatId, cb.getFrom().getId());
+            return;
+        }
+        if ("action:language".equals(data)) {
+            handleLanguage(chatId);
+            return;
+        }
+        if ("action:web".equals(data)) {
+            handleWeb(chatId);
+            return;
+        }
+        if ("action:miniapp".equals(data)) {
+            handleMiniapp(chatId);
+            return;
+        }
+        if ("action:estimate".equals(data)) {
+            handleEstimate(chatId, cb.getFrom().getId());
+            return;
+        }
+        if ("action:rate".equals(data)) {
+            handleRate(chatId, cb.getFrom().getId());
+            return;
+        }
+        if ("action:emergency".equals(data)) {
+            handleEmergency(chatId);
+            return;
+        }
+        if ("action:share".equals(data)) {
+            handleShare(chatId, cb.getFrom().getId());
+            return;
+        }
+        if ("action:favorite".equals(data)) {
+            handleFavorite(chatId, cb.getFrom().getId());
             return;
         }
 
@@ -686,6 +874,17 @@ public class PapeRideBot extends TelegramLongPollingBot {
         msg.setChatId(String.valueOf(chatId));
         msg.setText(text);
         executeSafe(msg);
+    }
+
+    /** Acknowledge Telegram callback query so loading spinners stop. */
+    private void answerCallbackQuery(String callbackQueryId) {
+        if (callbackQueryId == null || callbackQueryId.isBlank()) return;
+        try {
+            AnswerCallbackQuery answer = new AnswerCallbackQuery();
+            answer.setCallbackQueryId(callbackQueryId);
+            execute(answer);
+        } catch (TelegramApiException ignored) {
+        }
     }
 
     /** Edit an existing message (used after inline-button press). */

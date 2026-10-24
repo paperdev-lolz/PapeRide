@@ -239,6 +239,7 @@ module.exports = {
   toUser,
   toDriver,
   toRideRoom,
+  emitToRoom: toRideRoom,
   toOperators,
   toDrivers,
   connectedSessionCount,

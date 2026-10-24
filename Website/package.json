@@ -7,6 +7,7 @@
     "db:schema": "node scripts/apply-sql.js schema.sql",
     "db:migrate:passwords": "node scripts/apply-sql.js migrations/001_add_password_hash.sql",
     "db:migrate:labels": "node scripts/apply-sql.js migrations/002_add_ride_labels.sql",
+    "db:migrate:ratings": "node scripts/apply-sql.js migrations/003_add_ride_ratings.sql",
     "db:setup": "node scripts/apply-sql.js schema.sql",
     "admin:create": "node scripts/create-admin.js",
     "test:telegram": "node scripts/telegram-smoke-test.js",

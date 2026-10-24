@@ -362,11 +362,13 @@
     'Go online before streaming GPS': 'Выйдите на линию перед отправкой GPS',
     'Unsupported': 'Не поддерживается',
     'No Geolocation API in this browser': 'В этом браузере нет Geolocation API',
-    'Delete this account? Related rides keep their history.':
-      'Удалить этот аккаунт? История поездок сохранится.'
-
-
-
+        'Delete this account? Related rides keep their history.':
+      'Удалить этот аккаунт? История поездок сохранится.',
+    'Driver has arrived! Meet at pickup': 'Водитель прибыл! Ожидает на месте посадки',
+    'Trip in progress': 'Поездка началась',
+    'Arriving in ~4 min': 'Прибытие ~ через 4 мин',
+    'Settings saved': 'Настройки сохранены',
+    'Personalization applied': 'Персонализация применена',
   };
 
   var UZ = {
@@ -717,8 +719,13 @@
     'Go online before streaming GPS': 'GPS yuborishdan oldin chiqing',
     'Unsupported': 'Qo\'llab-quvvatlanmaydi',
     'No Geolocation API in this browser': 'Bu brauzerda Geolocation API yo\'q',
-    'Delete this account? Related rides keep their history.':
-      'Bu hisobni o\'chirishni xohlaysizmi? Sayohatlar tarixi saqlanadi.'
+        'Delete this account? Related rides keep their history.':
+      'Bu hisobni o\'chirishni xohlaysizmi? Sayohatlar tarixi saqlanadi.',
+    'Driver has arrived! Meet at pickup': 'Haydovchi yetib keldi! Olib ketish joyida kutmoqda',
+    'Trip in progress': 'Safar davom etmoqda',
+    'Arriving in ~4 min': 'Yetib kelish ~4 daqiqada',
+    'Settings saved': 'Sozlamalar saqlandi',
+    'Personalization applied': 'Moslashtirish qo‘llandi',
   };
 
   var dicts = { ru: RU, uz: UZ };

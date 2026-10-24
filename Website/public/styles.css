@@ -2588,3 +2588,68 @@ input:hover, select:hover, .modal input:hover, .modal textarea:hover {
 .search-results .search-item .si-name { font-weight: 600; }
 .search-results .search-item .si-cat { font-size: 11px; opacity: .6; }
 .search-results .search-empty { padding: 8px 10px; font-size: 12px; opacity: .6; }
+
+/* ============================================================================
+   New features: tracking page, ratings, driver cards
+   ============================================================================ */
+.track-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 14px 16px;
+  margin: 10px 0;
+}
+.track-card .track-status {
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+}
+.track-card .track-status.assigned { color: var(--brand); }
+.track-card .track-status.in_progress { color: var(--accent); }
+.track-card .track-status.completed { color: var(--brand-dark); }
+.track-card .track-status.cancelled { color: var(--danger); }
+.track-card .track-detail { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin: 4px 0; }
+.track-card .track-detail b { color: var(--text); }
+
+.rating-stars { display: flex; gap: 6px; font-size: 24px; cursor: pointer; }
+.rating-stars .star { color: rgba(255,176,32,.3); transition: color .15s; }
+.rating-stars .star.filled { color: var(--warn); }
+
+.driver-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  padding: 12px 14px;
+  margin: 8px 0;
+  display: flex; align-items: center; gap: 12px;
+}
+.driver-card .driver-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--brand-soft); color: var(--brand);
+  display: grid; place-items: center; font-size: 20px; font-weight: 700;
+}
+.driver-card .driver-info { flex: 1; }
+.driver-card .driver-name { font-weight: 700; color: var(--text); }
+.driver-card .driver-meta { font-size: 12px; color: var(--muted); }
+
+/* Mobile refinements for new panels */
+@media (max-width: 600px) {
+  .track-card { padding: 12px 14px; }
+  .driver-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+
+/* Rating stars interactivity */
+.rating-stars .star:hover { color: var(--warn); text-shadow: 0 0 6px var(--warn); }
+.rating-stars .star.filled:hover { text-shadow: none; }
+
+/* Driver rating badge pulse on new rating */
+.driver-rating-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--warn);
+  background: rgba(255, 176, 32, .12);
+  padding: 2px 8px;
+  border-radius: 20px;
+}

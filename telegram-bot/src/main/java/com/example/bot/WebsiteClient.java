@@ -161,25 +161,37 @@ public class WebsiteClient {
     }
 
     private JsonNode request(String method, String path, JsonNode body, Duration timeout) throws Exception {
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + path))
-                .timeout(timeout)
-                .header("X-Telegram-Token", token)
-                .header("Accept", "application/json");
-        if (body != null) {
-            builder.header("Content-Type", "application/json")
-                   .method(method, HttpRequest.BodyPublishers.ofString(body.toString()));
-        } else {
-            builder.method(method, HttpRequest.BodyPublishers.noBody());
-        }
+        int attempts = 0;
+        while (true) {
+            attempts++;
+            try {
+                HttpRequest.Builder builder = HttpRequest.newBuilder()
+                        .uri(URI.create(baseUrl + path))
+                        .timeout(timeout)
+                        .header("X-Telegram-Token", token)
+                        .header("Accept", "application/json");
+                if (body != null) {
+                    builder.header("Content-Type", "application/json")
+                           .method(method, HttpRequest.BodyPublishers.ofString(body.toString()));
+                } else {
+                    builder.method(method, HttpRequest.BodyPublishers.noBody());
+                }
 
-        HttpResponse<String> response = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-        int status = response.statusCode();
-        if (status >= 200 && status < 300) {
-            return json.readTree(response.body());
+                HttpResponse<String> response = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+                int status = response.statusCode();
+                if (status >= 200 && status < 300) {
+                    return json.readTree(response.body());
+                }
+                String message = extractErrorMessage(response.body());
+                throw new ApiException(status, message != null ? message : "HTTP " + status);
+            } catch (java.io.IOException | InterruptedException e) {
+                if (attempts < 3) {
+                    try { Thread.sleep(250L * attempts); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+                    continue;
+                }
+                throw e;
+            }
         }
-        String message = extractErrorMessage(response.body());
-        throw new ApiException(status, message != null ? message : "HTTP " + status);
     }
 
     /** The website's public error shape: {"error":{"code","message"}}. */

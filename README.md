@@ -36,6 +36,30 @@ Telegram user ──▶ PapeRideBot (Java) ──HTTP + X-Telegram-Token──�
   Station") are stored in `ride_requests.pickup_label/dropoff_label`
   (migration `002`) and shown to operators next to the coordinates.
 
+### Telegram bot commands
+
+| Command | Purpose |
+| --- | --- |
+| `/start` | Welcome message + quick actions |
+| `/request` | Book a new ride (pickup → destination → confirm) |
+| `/rides` | Your recent rides and live status |
+| `/cancel` | Cancel a pending or assigned ride |
+| `/language` | Switch EN / RU / UZ |
+| `/web` | Open the website & live map |
+| `/miniapp` | Open the Telegram MiniApp |
+| `/estimate` | Fare estimate info |
+| `/rate` | Rate a completed ride |
+| `/emergency` | Safety & emergency guidance |
+| `/share` | Share ride details |
+| `/favorite` | Saved locations info |
+| `/about` | About PapeRide |
+| `/contact` | Support contact |
+| `/help` | Full command list |
+
+The bot polls the website every 10 s and messages the rider when a ride
+status changes: driver assigned (name, vehicle, plate, phone, fare),
+started, completed or cancelled.
+
 ### Website API used by the bot
 
 All endpoints require the `X-Telegram-Token` header (shared secret).
@@ -43,6 +67,9 @@ All endpoints require the `X-Telegram-Token` header (shared secret).
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Boot-time reachability check |
+| `GET` | `/api/version` | Service version info |
+| `GET` | `/api/docs` | Lightweight endpoint reference |
+| `GET` | `/api/track/:rideId` | Public ride tracking (no auth, limited fields) |
 | `POST` | `/api/telegram/rides` | Book a ride (`telegram_user_id`, coordinates, labels) |
 | `GET` | `/api/telegram/rides?telegram_user_id=` | History + live status for `/rides` and the poller |
 | `POST` | `/api/telegram/rides/:id/cancel` | Rider cancels their own pending/assigned ride |

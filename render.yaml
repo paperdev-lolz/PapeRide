@@ -16,3 +16,26 @@ services:
         generateValue: true
       - key: TELEGRAM_INTERNAL_TOKEN
         generateValue: true
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: Telegram bot service (RENDER PAID PLAN REQUIRED)
+  # The free Render tier spins down after ~15 min of inactivity, which breaks
+  # the bot's long-polling connection to Telegram. Uncomment below only if you
+  # upgrade Render to a paid plan ($7+/mo) so the bot stays awake.
+  # ---------------------------------------------------------------------------
+  # - type: web
+  #   name: paperide-bot
+  #   runtime: java
+  #   plan: starter           # paid plan; free tier will NOT work
+  #   rootDir: telegram-bot
+  #   buildCommand: mvn -q -DskipTests package
+  #   startCommand: java -jar target/*.jar
+  #   envVars:
+  #     - key: BOT_USERNAME
+  #       sync: false
+  #     - key: BOT_TOKEN
+  #       sync: false
+  #     - key: WEBSITE_URL
+  #       value: https://paperide-website.onrender.com
+  #     - key: WEBSITE_INTERNAL_TOKEN
+  #       sync: false

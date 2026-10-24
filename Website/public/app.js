@@ -832,6 +832,17 @@
       setText('#rider-driver-vehicle', (ride.vehicleModel || '') + ' · ' + (ride.licensePlate || '') +
         ' · ' + (ride.quote ? ride.quote.fare.toLocaleString('en-US') + ' UZS' : ''));
       setText('#rider-driver-phone', ride.driverPhone || '');
+      if (ride.driverPhone) {
+        var phoneLink = $('#rider-driver-phone-link');
+        if (phoneLink) phoneLink.href = 'tel:' + ride.driverPhone;
+        show(phoneLink.parentElement, true);
+      } else {
+        show($('#rider-driver-phone-link').parentElement, false);
+      }
+      if (ride.driverRating) {
+        var ratingEl = $('#rider-driver-card .driver-rating-badge');
+        if (ratingEl) ratingEl.textContent = '★ ' + ride.driverRating.toFixed(2);
+      }
       var etaEl = $('#driver-eta-status');
       if (etaEl) {
         if (ride.stage === 'arrived') {

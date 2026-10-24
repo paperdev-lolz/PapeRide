@@ -109,6 +109,26 @@ function assertOptionalLabel(value, field = 'label') {
   return label ? label.slice(0, 160) : null;
 }
 
+/** Optional non-negative integer (e.g. limit / page). */
+function assertOptionalNonNegativeInt(value, field, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const num = typeof value === 'string' ? Number(value.trim()) : value;
+  if (!Number.isInteger(num) || num < 0) {
+    throw new ValidationError(`Invalid ${field}`, { field, reason: 'not_a_nonnegative_integer' });
+  }
+  return num;
+}
+
+/** Optional positive integer. */
+function assertOptionalPositiveInt(value, field, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const num = typeof value === 'string' ? Number(value.trim()) : value;
+  if (!Number.isInteger(num) || num <= 0) {
+    throw new ValidationError(`Invalid ${field}`, { field, reason: 'not_a_positive_integer' });
+  }
+  return num;
+}
+
 /**
  * Validate a user ride request payload.
  * @returns {{pickupLat:number,pickupLng:number,dropoffLat:number,dropoffLng:number}}
@@ -164,6 +184,8 @@ module.exports = {
   assertVehicleModel,
   assertLicensePlate,
   assertOptionalLabel,
+  assertOptionalNonNegativeInt,
+  assertOptionalPositiveInt,
   validateRidePayload,
   validateLocationPayload,
   haversineKm,

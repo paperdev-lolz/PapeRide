@@ -145,9 +145,10 @@ async function cancelRide(telegramUserId, rideId, reason = 'cancelled_by_rider')
   const result = await ridesService.cancelRide(identity, rideId, reason);
   const ride = result.ride;
 
+  const previousStatus = result.releasedDriverId ? 'assigned' : 'pending';
   events.emitRideStatusUpdate({
     ride,
-    previousStatus: result.releasedDriverId || ride.status === 'cancelled' ? 'assigned' : 'pending',
+    previousStatus,
     stage: 'cancelled_by_rider',
     actor: { id: rider.id, role: 'user', name: rider.full_name },
   });

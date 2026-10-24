@@ -8,9 +8,9 @@ enum BotText {
             "🚗 *Добро пожаловать в PapeRide, %s!*\n\nЯ помогу вам быстро заказать поездку.\n\nОтправьте /request, чтобы начать.\nОтправьте /web, чтобы открыть карту и сайт.\nОтправьте /help, чтобы увидеть команды. Используйте /language для смены языка.",
             "🚗 *PapeRide'ga xush kelibsiz, %s!*\n\nMen sizga tezda safar buyurtma qilishga yordam beraman.\n\nBoshlash uchun /request yuboring.\nXarita va saytni ochish uchun /web yuboring.\nBuyruqlar uchun /help yuboring. Tilni o'zgartirish uchun /language yuboring."),
     HELP(
-            "📋 *PapeRide Commands*\n\n/request — Book a new ride\n/web — Open website & live map\n/rides — Your recent rides and live status\n/cancel — Cancel a request or active ride\n/language — Change language\n/help — Show this help",
-            "📋 *Команды PapeRide*\n\n/request — Заказать поездку\n/web — Открыть сайт и живую карту\n/rides — Последние поездки и их статус\n/cancel — Отменить запрос или активную поездку\n/language — Сменить язык\n/help — Эта справка",
-            "📋 *PapeRide buyruqlari*\n\n/request — Yangi safar buyurtma qilish\n/web — Sayt va jonli xaritani ochish\n/rides — Oxirgi safarlar va ularning holati\n/cancel — So'rov yoki faol safarni bekor qilish\n/language — Tilni o'zgartirish\n/help — Yordam"),
+            "📋 *PapeRide Commands*\n\n/request — Book a new ride\n/web — Open website & live map\n/miniapp — Open Telegram MiniApp\n/rides — Your recent rides and live status\n/cancel — Cancel a request or active ride\n/language — Change language\n/help — Show this help",
+            "📋 *Команды PapeRide*\n\n/request — Заказать поездку\n/web — Открыть сайт и живую карту\n/miniapp — Открыть Telegram MiniApp\n/rides — Последние поездки и их статус\n/cancel — Отменить запрос или активную поездку\n/language — Сменить язык\n/help — Эта справка",
+            "📋 *PapeRide buyruqlari*\n\n/request — Yangi safar buyurtma qilish\n/web — Sayt va jonli xaritani ochish\n/miniapp — Telegram MiniApp'ni ochish\n/rides — Oxirgi safarlar va ularning holati\n/cancel — So'rov yoki faol safarni bekor qilish\n/language — Tilni o'zgartirish\n/help — Yordam"),
     WEB_LINK(
             "🌐 *PapeRide Web Console & Live Map*\n\nTrack your rides in real time, view driver telematics, and use full interactive map features:\n👉 %s",
             "🌐 *Веб-консоль и живая карта PapeRide*\n\nОтслеживайте поездки в реальном времени, наблюдайте за машинами и пользуйтесь интерактивной картой:\n👉 %s",
@@ -59,14 +59,31 @@ enum BotText {
     DESTINATION("Destination", "Куда", "Manzil"),
     CONFIRM("✅ Confirm", "✅ Подтвердить", "✅ Tasdiqlash"),
     CANCEL("❌ Cancel", "❌ Отмена", "❌ Bekor qilish"),
+    BTN_REQUEST_RIDE("🚕 Book a Ride", "🚕 Заказать поездку", "🚕 Safar buyurtma qilish"),
+    BTN_MINIAPP("🚀 Open MiniApp", "🚀 Открыть MiniApp", "🚀 MiniApp'ni ochish"),
+    BTN_WEB_CONSOLE("🌐 Web Console", "🌐 Веб-консоль", "🌐 Veb-konsol"),
+    BTN_MY_RIDES("🧾 My Rides", "🧾 Мои поездки", "🧾 Safarlarim"),
+    BTN_LANGUAGE("🌐 Language", "🌐 Сменить язык", "🌐 Tilni o'zgartirish"),
+    QUICK_ACTIONS(
+            "✨ *Quick Actions:* Tap a button below to get started:",
+            "✨ *Быстрые действия:* Нажмите кнопку ниже для старта:",
+            "✨ *Tezkor amallar:* Boshlash uchun quyidagi tugmani bosing:"),
+    AUTO_PICKUP_SET(
+            "📍 *Pickup set to your location:*\n%s\n\n📌 Now share your location or tap 📎 → Location to pin your *destination*:",
+            "📍 *Точка посадки установлена:*\n%s\n\n📌 Теперь отправьте геопозицию или нажмите 📎 → Геопозиция для выбора *места назначения*:",
+            "📍 *Olib ketish nuqtasi belgilandi:*\n%s\n\n📌 Endi boradigan *manzilingizni* yuboring yoki xaritadan tanlang:"),
+    MINIAPP_PROMPT(
+            "🚀 *PapeRide Telegram MiniApp*\n\nTap below to open the interactive map, track active drivers, and order rides directly inside Telegram:",
+            "🚀 *Telegram MiniApp PapeRide*\n\nНажмите ниже, чтобы открыть интерактивную карту, следить за водителями и заказывать поездки прямо в Telegram:",
+            "🚀 *PapeRide Telegram MiniApp*\n\nTelegram ichida interaktiv xarita, haydovchilarni kuzatish va buyurtma berish uchun quyidagi tugmani bosing:"),
     USE_BUTTONS(
             "👆 Please use the buttons above to *Confirm* or *Cancel* your ride.",
             "👆 Используйте кнопки выше, чтобы *подтвердить* или *отменить* поездку.",
             "👆 Safarni *tasdiqlash* yoki *bekor qilish* uchun yuqoridagi tugmalardan foydalaning."),
     NUDGE(
-            "Type /request to book a ride, or /help to see all commands.",
-            "Отправьте /request, чтобы заказать поездку, или /help, чтобы увидеть команды.",
-            "Safar buyurtma qilish uchun /request, buyruqlarni ko'rish uchun /help yuboring."),
+            "Type /request to book a ride, /web for map, or /help to see all commands.",
+            "Отправьте /request, чтобы заказать поездку, /web для карты, или /help для списка команд.",
+            "Safar buyurtma qilish uchun /request, xarita uchun /web, yoki buyruqlar uchun /help yuboring."),
     NO_ACTIVE_REQUEST(
             "⚠️ No active ride request found. Send /request to start a new one.",
             "⚠️ Активный запрос не найден. Отправьте /request, чтобы создать новый.",
@@ -147,6 +164,31 @@ enum BotText {
             "❌ Ваша поездка отменена.",
             "❌ Safaringiz bekor qilindi."),
     REQUEST_AGAIN("Send /request whenever you need a ride!", "Отправьте /request, когда понадобится поездка!", "Safar kerak bo'lganda /request yuboring!"),
+    ESTIMATE(
+            "💰 Fare estimate: share pickup + destination to get a price quote before booking.",
+            "💰 Оценочная стоимость: укажите отправку и пункт назначения, чтобы узнать цену перед заказом.",
+            "💰 Narx baholash: olib ketish va manzilni yuboring, buyurtma berishdan oldin narxni bilishingiz mumkin."
+    ),
+    RATE(
+            "⭐ How would you rate your last ride? (1–5 stars)",
+            "⭐ Как бы вы оценили последнюю поездку? (1–5 звёзд)",
+            "⭐ Oxirgi safaringizni qanday baholaysiz? (1–5 yulduz)"
+    ),
+    EMERGENCY(
+            "🚨 Emergency: dial local emergency services immediately. Share your ride ID with support via /contact.",
+            "🚨 Чрезвычайная ситуация: немедленно звоните в службу экстренной помощи. Сообщите ID поездки в поддержку через /contact.",
+            "🚨 Havfsizlik: avvalroq mijoz xizmatiga qo'ng'iroch qiling. Safar ID'sini /contact orqali yuboring."
+    ),
+    SHARE(
+            "📤 Share your ride details with friends or family.",
+            "📤 Поделитесь данными поездки с друзьями или семьей.",
+            "📤 Safar ma'lumotlarini do'stlar yoki xodislamingiz bilan ulashing."
+    ),
+    FAVORITE(
+            "📍 Saved locations: home, work, and frequent spots come here.",
+            "📍 Сохранённые места: дом, работа и частые точки.",
+            "📍 Saqlangan joylar: uy, ish va tez-tez borgan joylar."
+    ),
     KM("%s km", "%s км", "%s km");
 
     private final String english;

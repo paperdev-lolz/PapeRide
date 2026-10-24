@@ -33,6 +33,7 @@ function serialiseRide(ride) {
     vehicleModel: ride.vehicle_model,
     licensePlate: ride.license_plate,
     driverStatus: ride.driver_status,
+    driverRating: null,
     driverLocation:
       ride.driver_lat !== null && ride.driver_lat !== undefined
         ? { lat: Number(ride.driver_lat), lng: Number(ride.driver_lng) }
@@ -53,6 +54,7 @@ function serialiseDriver(driver) {
     vehicleModel: driver.vehicle_model,
     licensePlate: driver.license_plate,
     status: driver.status,
+    rating: null,
     location:
       driver.current_lat !== null && driver.current_lat !== undefined
         ? { lat: Number(driver.current_lat), lng: Number(driver.current_lng) }
