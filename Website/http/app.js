@@ -30,7 +30,7 @@ function createApp() {
     res.setHeader('X-XSS-Protection', '0');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' https://cdn.socket.io 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none';"
+      "default-src 'self'; script-src 'self' https://cdn.socket.io 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://basemaps.cartocdn.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' ws: wss:; frame-ancestors 'none';"
     );
     next();
   });

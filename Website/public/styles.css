@@ -289,6 +289,8 @@
 html, body {
   height: 100%;
   margin: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -1794,8 +1796,9 @@ input:hover, select:hover, .modal input:hover, .modal textarea:hover {
   .main-nav { gap: 4px; }
   .nav-link { padding: 8px 12px; }
   .topbar-right { gap: 10px; }
-  .layout { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { max-height: none; }
+  .layout { grid-template-columns: 1fr; grid-template-rows: auto minmax(320px, 1fr); }
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--line); max-height: 52vh; }
+  .map-wrap { min-height: 320px; }
 }
 
 @media (max-width: 760px) {

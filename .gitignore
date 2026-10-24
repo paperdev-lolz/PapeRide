@@ -19,3 +19,5 @@
 Website/tsconfig.tsbuildinfo
 
 **/next-env.d.ts
+.idea/
+**/.idea/

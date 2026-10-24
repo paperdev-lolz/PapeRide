@@ -215,7 +215,33 @@
 
     if (mapTileLayer && map) map.removeLayer(mapTileLayer);
     mapTileLayer = L.tileLayer(url, { maxZoom: 19, subdomains: 'abcd', attribution: attr });
+    mapTileLayer.on('tileerror', function () {
+      if (!mapTileLayer._fellBack && style !== 'voyager' && style !== 'light') {
+        mapTileLayer._fellBack = true;
+        map.removeLayer(mapTileLayer);
+        mapTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: attr
+        }).addTo(map);
+      }
+    });
     if (map) mapTileLayer.addTo(map);
+  }
+
+  function initMapResizeObserver() {
+    var mapEl = document.getElementById('map');
+    if (!mapEl) return;
+    if (typeof ResizeObserver !== 'undefined') {
+      var ro = new ResizeObserver(function () {
+        if (map && mapEl.offsetWidth > 0 && mapEl.offsetHeight > 0) {
+          map.invalidateSize({ pan: false });
+        }
+      });
+      ro.observe(mapEl);
+    }
+    window.addEventListener('resize', function () {
+      if (map) map.invalidateSize({ pan: false });
+    });
   }
 
   function initMap() {
@@ -282,6 +308,14 @@
         map.removeLayer(layers[key]);
       }
     });
+    if (map) {
+      map.invalidateSize({ pan: false });
+      if (role === 'user' && state.rider && state.rider.pickup && state.rider.dropoff) {
+        if (state.rider.pickupMarker) state.rider.pickupMarker.setLatLng([state.rider.pickup.lat, state.rider.pickup.lng]);
+        if (state.rider.dropoffMarker) state.rider.dropoffMarker.setLatLng([state.rider.dropoff.lat, state.rider.dropoff.lng]);
+        drawRiderRoute();
+      }
+    }
     $('#map-legend').textContent = 'Tashkent · ' + fmt(TASHKENT.lat) + ', ' + fmt(TASHKENT.lng) +
       ' · view: ' + role;
   }
@@ -1691,7 +1725,15 @@
     if (!isHome) {
       switchRole(page);
       // Leaflet cannot measure a container that was display:none.
-      window.setTimeout(function () { if (map) map.invalidateSize(); }, 60);
+      window.setTimeout(function () {
+        if (map) {
+          map.invalidateSize({ pan: false });
+          if (page === 'user') drawRiderRoute();
+        }
+      }, 50);
+      window.setTimeout(function () {
+        if (map) map.invalidateSize({ pan: false });
+      }, 300);
     }
   }
 
@@ -2383,7 +2425,14 @@
   }
 
   function boot() {
+    var route = (window.location.hash || '').replace(/^#\/?/, '').toLowerCase();
+    var initialPage = ROUTES[route] || 'home';
+    if (initialPage !== 'home') {
+      show('#page-home', false);
+      show('#console-layout', true);
+    }
     initMap();
+    initMapResizeObserver();
     refreshRiderEstimate();
     bindEvents();
     initHamburger();
