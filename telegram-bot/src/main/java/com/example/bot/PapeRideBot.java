@@ -242,11 +242,47 @@ public class PapeRideBot extends TelegramLongPollingBot {
         InlineKeyboardButton langBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_LANGUAGE));
         langBtn.setCallbackData("action:language");
 
+        InlineKeyboardButton helpBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_HELP));
+        helpBtn.setCallbackData("action:help");
+
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(List.of(
                 List.of(bookBtn, miniAppBtn),
                 List.of(webBtn, ridesBtn),
-                List.of(langBtn)
+                List.of(langBtn, helpBtn)
+        ));
+        return markup;
+    }
+
+    private InlineKeyboardMarkup createHelpMarkup(long chatId) {
+        String siteUrl = website.getBaseUrl();
+        if (siteUrl == null || siteUrl.isBlank()) {
+            siteUrl = "https://paperide-website.onrender.com";
+        }
+
+        InlineKeyboardButton bookBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_REQUEST_RIDE));
+        bookBtn.setCallbackData("action:request");
+
+        InlineKeyboardButton miniAppBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_MINIAPP));
+        miniAppBtn.setUrl("https://t.me/paperide_bot/PapeRide");
+
+        InlineKeyboardButton webBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_WEB_CONSOLE));
+        webBtn.setUrl(siteUrl);
+
+        InlineKeyboardButton ridesBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_MY_RIDES));
+        ridesBtn.setCallbackData("action:rides");
+
+        InlineKeyboardButton langBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_LANGUAGE));
+        langBtn.setCallbackData("action:language");
+
+        InlineKeyboardButton startBtn = new InlineKeyboardButton(text(chatId, BotText.BTN_MAIN_MENU));
+        startBtn.setCallbackData("action:start");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(
+                List.of(bookBtn, miniAppBtn),
+                List.of(webBtn, ridesBtn),
+                List.of(langBtn, startBtn)
         ));
         return markup;
     }
@@ -265,7 +301,7 @@ public class PapeRideBot extends TelegramLongPollingBot {
         message.setChatId(String.valueOf(chatId));
         message.setText(text(chatId, BotText.HELP));
         message.enableMarkdown(true);
-        message.setReplyMarkup(createQuickActionsMarkup(chatId));
+        message.setReplyMarkup(createHelpMarkup(chatId));
         executeSafe(message);
     }
 
@@ -581,6 +617,14 @@ public class PapeRideBot extends TelegramLongPollingBot {
 
         if ("action:request".equals(data)) {
             startRideRequest(chatId);
+            return;
+        }
+        if ("action:start".equals(data)) {
+            handleStart(chatId, cb.getFrom().getFirstName());
+            return;
+        }
+        if ("action:help".equals(data)) {
+            handleHelp(chatId);
             return;
         }
         if ("action:rides".equals(data)) {
