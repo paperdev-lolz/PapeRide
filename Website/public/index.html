@@ -27,6 +27,10 @@
     </button>
     <nav class="main-nav" id="main-nav" aria-label="Main navigation">
       <a class="nav-link" href="#/" data-page="home">Home</a>
+      <a class="nav-link role-tab is-active" href="#/rider" data-role="user" data-page="user">Rider</a>
+      <a class="nav-link role-tab" href="#/driver" data-role="driver" data-page="driver">Driver</a>
+      <a class="nav-link role-tab" href="#/operator" data-role="operator" data-page="operator">Operator</a>
+      <a class="nav-link role-tab" href="#/admin" data-role="admin" data-page="admin">Admin</a>
     </nav>
 
     <div class="topbar-right">
@@ -104,6 +108,7 @@
             <span class="map-marker map-marker-end"><i></i></span>
             <span class="map-route-label">YOUR CITY, IN MOTION</span>
           </div>
+          <div class="art-card art-a"><b>4</b><span>role consoles</span></div>
           <div class="art-card art-b"><b>GPS</b><span>live ride tracking</span></div>
           <div class="art-card art-c"><b>3</b><span>languages</span></div>
         </div>
@@ -121,6 +126,39 @@
         <div class="proof-item">
           <span class="proof-icon" aria-hidden="true">文</span>
           <span><strong>Made for Tashkent</strong><small>English · Русский · O‘zbekcha</small></span>
+        </div>
+      </div>
+
+      <div class="section reveal" id="console-directory">
+        <div class="section-head">
+          <h2>One platform, four consoles</h2>
+          <p>Pick the workspace that matches your role — every console is purpose-built.</p>
+        </div>
+        <div class="role-grid">
+          <a class="role-card" data-console-role="user" href="#/rider">
+            <span class="role-card-icon">🛵</span>
+            <h3>Rider</h3>
+            <p>Set pickup and destination on the map, get an instant fare estimate and track your driver live.</p>
+            <span class="role-card-cta">Open console</span>
+          </a>
+          <a class="role-card" data-console-role="driver" href="#/driver">
+            <span class="role-card-icon">🚗</span>
+            <h3>Driver</h3>
+            <p>Go online, receive ride offers and manage a trip from arrival to completion.</p>
+            <span class="role-card-cta">Open console</span>
+          </a>
+          <a class="role-card" data-console-role="operator" href="#/operator">
+            <span class="role-card-icon">🎛️</span>
+            <h3>Operator</h3>
+            <p>Dispatch pending rides with drag &amp; drop, watch the fleet and keep the board moving.</p>
+            <span class="role-card-cta">Open console</span>
+          </a>
+          <a class="role-card" data-console-role="admin" href="#/admin">
+            <span class="role-card-icon">🛡️</span>
+            <h3>Admin</h3>
+            <p>Manage accounts, review drivers and rides, and audit every event in the system log.</p>
+            <span class="role-card-cta">Open console</span>
+          </a>
         </div>
       </div>
 
@@ -269,7 +307,361 @@
     </section>
 
     <!-- ========================= ROLE CONSOLES ========================== -->
-    <!-- REMOVED: Console layout including sidebar panels and map section -->
+    <div class="layout hidden" id="console-layout">
+    <!-- ============================ SIDEBAR ============================ -->
+    <aside class="sidebar">
+
+      <!-- ------------------------- RIDER PANEL ------------------------- -->
+      <section class="panel is-active" id="panel-user">
+        <div class="page-head">
+          <span class="page-icon">🛵</span>
+          <div class="page-head-copy">
+            <h2>Rider console</h2>
+            <p class="hint">Request a trip, set your route on the map and follow your driver live.</p>
+          </div>
+          <button class="btn accent" id="rider-become-driver" type="button">Become a Driver</button>
+        </div>
+
+        <div class="card session-card hidden" id="rider-session">
+          <div class="session-head">
+            <div>
+              <span class="badge" id="rider-status-badge">idle</span>
+              <strong id="rider-name">—</strong>
+            </div>
+          </div>
+          <div class="rider-search-box">
+            <div class="search-input-group" style="position:relative">
+              <span class="search-dot pickup-dot"></span>
+              <input type="text" id="rider-search-pickup" class="smart-input" placeholder="Search pickup destination..." value="Amir Timur Square" autocomplete="off" />
+              <button class="btn icon-btn" id="rider-mode-pickup" type="button" title="Set on map">📍</button>
+            </div>
+            <div class="search-results" id="pickup-results"></div>
+            <button class="btn ghost small" id="rider-find-me" type="button" style="margin:6px 0 10px">📍 Find my location</button>
+            <div class="search-input-group" style="position:relative">
+              <span class="search-dot dropoff-dot"></span>
+              <input type="text" id="rider-search-dropoff" class="smart-input" placeholder="Search destination (e.g. Chartaq)..." value="Tashkent International Airport" autocomplete="off" />
+              <button class="btn icon-btn" id="rider-mode-dropoff" type="button" title="Set on map">🏁</button>
+            </div>
+            <div class="search-results" id="dropoff-results"></div>
+          </div>
+
+          <div class="quick-destinations-wrap">
+            <span class="quick-label">Popular in Tashkent:</span>
+            <div class="quick-chips" id="quick-chips">
+              <button class="chip" type="button" data-lat="41.3111" data-lng="69.2797" data-name="Airport (TAS)">✈️ Airport</button>
+              <button class="chip" type="button" data-lat="41.3117" data-lng="69.2457" data-name="Tashkent City Park">🌳 Tashkent City</button>
+              <button class="chip" type="button" data-lat="41.3265" data-lng="69.2285" data-name="Chorsu Bazaar">🛍️ Chorsu</button>
+              <button class="chip" type="button" data-lat="41.3409" data-lng="69.2849" data-name="Tashkent Tower">🗼 TV Tower</button>
+              <button class="chip" type="button" data-lat="41.2995" data-lng="69.2401" data-name="Amir Timur Square">🏛️ Broadway</button>
+            </div>
+          </div>
+
+          <!-- Ride Class Selector (Uber / Yandex Go style) -->
+          <div class="ride-tier-section">
+            <label class="tier-section-title">Select Ride Class</label>
+            <div class="ride-tiers" id="ride-tier-group" role="radiogroup">
+              <div class="ride-tier-card is-selected" data-tier="economy" tabindex="0">
+                <div class="tier-badge-eta" id="eta-economy">3 min</div>
+                <div class="tier-icon">🚗</div>
+                <div class="tier-info">
+                  <strong class="tier-name">Economy</strong>
+                  <span class="tier-desc">Affordable daily rides · Cobalt / Spark</span>
+                </div>
+                <div class="tier-price" id="price-economy">—</div>
+              </div>
+
+              <div class="ride-tier-card" data-tier="comfort" tabindex="0">
+                <div class="tier-badge-eta" id="eta-comfort">5 min</div>
+                <div class="tier-icon">🚘</div>
+                <div class="tier-info">
+                  <strong class="tier-name">Comfort</strong>
+                  <span class="tier-desc">Quiet cars &amp; AC · Lacetti / Gentra</span>
+                </div>
+                <div class="tier-price" id="price-comfort">—</div>
+              </div>
+
+              <div class="ride-tier-card" data-tier="business" tabindex="0">
+                <div class="tier-badge-eta" id="eta-business">7 min</div>
+                <div class="tier-icon">✨</div>
+                <div class="tier-info">
+                  <strong class="tier-name">Business</strong>
+                  <span class="tier-desc">Executive comfort · Malibu / Kia K5</span>
+                </div>
+                <div class="tier-price" id="price-business">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="trip-summary-pill">
+            <div class="summary-metric">
+              <span class="metric-label">Estimated Route</span>
+              <strong class="metric-val" id="rider-quote-distance">—</strong>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-label">Estimated Time</span>
+              <strong class="metric-val" id="rider-est-duration">—</strong>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-label">Selected Fare</span>
+              <strong class="metric-val fare-highlight" id="rider-quote-fare">—</strong>
+            </div>
+          </div>
+
+          <!-- Uber / Yandex Go: Payment Method & Ride Amenities (Quiet ride / AC / Luggage) -->
+          <div class="payment-and-options">
+            <div class="payment-selector-wrap">
+              <label class="tier-section-title">Payment Method</label>
+              <div class="payment-methods" id="payment-methods">
+                <button class="pay-btn is-active" data-pay="cash" type="button">💵 Cash</button>
+                <button class="pay-btn" data-pay="uzcard" type="button">💳 UzCard / Humo</button>
+                <button class="pay-btn" data-pay="click" type="button">📱 Click / Payme</button>
+              </div>
+            </div>
+
+            <div class="amenities-wrap">
+              <label class="tier-section-title">Trip Preferences</label>
+              <div class="amenity-toggles">
+                <label class="amenity-pill">
+                  <input type="checkbox" id="pref-quiet" />
+                  <span>🤫 Quiet Ride</span>
+                </label>
+                <label class="amenity-pill">
+                  <input type="checkbox" id="pref-ac" checked />
+                  <span>❄️ AC On</span>
+                </label>
+                <label class="amenity-pill">
+                  <input type="checkbox" id="pref-luggage" />
+                  <span>🧳 Luggage</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row gap mt-3">
+            <button class="btn primary lg grow uber-request-btn" id="rider-request-btn" type="button">
+              <span class="request-btn-text">Request Ride</span>
+              <span class="request-btn-sub" id="request-btn-sub">Instant dispatch</span>
+            </button>
+            <button class="btn danger lg grow" id="rider-cancel-btn" type="button" disabled>Cancel Ride</button>
+          </div>
+
+          <div class="ride-card hidden" id="rider-driver-card">
+            <div class="driver-card-header">
+              <div class="driver-avatar-circle">🚕</div>
+              <div class="driver-identity">
+                <h3 id="rider-driver-name">—</h3>
+                <span class="driver-vehicle-badge" id="rider-driver-vehicle">—</span>
+              </div>
+              <div class="driver-rating-badge">★ 4.96</div>
+            </div>
+            <div class="driver-contact-row">
+              <a class="driver-phone-link" id="rider-driver-phone-link" href="#">📞 <span id="rider-driver-phone">—</span></a>
+              <span class="eta-pill" id="driver-eta-status">Arriving in ~4 min</span>
+            </div>
+          </div>
+
+          <!-- Telegram Bot Sync Card -->
+          <div class="telegram-rider-banner">
+            <div class="tg-banner-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.63 3.73-.53.36-1.02.54-1.45.53-.48-.01-1.4-.27-2.09-.49-.84-.27-1.51-.42-1.45-.89.03-.25.38-.5.98-.77 3.86-1.68 6.44-2.78 7.73-3.32 3.68-1.53 4.44-1.8 4.94-1.81.11 0 .35.03.51.16.13.11.17.26.19.37.02.14.02.3 0 .46z"/>
+              </svg>
+            </div>
+            <div class="tg-banner-copy">
+              <strong>Order &amp; track on Telegram</strong>
+              <span>Use our Telegram Bot on the go with real-time status notifications.</span>
+            </div>
+            <a class="tg-banner-action" href="https://t.me/paperide_bot" target="_blank" rel="noopener">Open Bot →</a>
+          </div>
+
+          <h3>Ride history</h3>
+          <ul class="list" id="rider-history"></ul>
+        </div>
+      </section>
+
+      <!-- ------------------------ OPERATOR PANEL ----------------------- -->
+      <section class="panel" id="panel-operator">
+        <div class="page-head">
+          <span class="page-icon">🎛️</span>
+          <div class="page-head-copy">
+            <h2>Operator dispatch</h2>
+            <p class="hint">Run the live board: assign pending rides to drivers with drag &amp; drop.</p>
+          </div>
+        </div>
+
+        <div class="card session-card hidden" id="op-session">
+          <div class="session-head">
+            <div><strong id="op-name">—</strong><span class="badge" id="op-badge">operator</span></div>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat"><b id="op-count-pending">0</b><span>pending</span></div>
+            <div class="stat"><b id="op-count-live">0</b><span>live</span></div>
+            <div class="stat"><b id="op-count-drivers">0</b><span>drivers</span></div>
+          </div>
+
+          <div class="drop-help">
+            <b>Drag &amp; drop dispatch</b>
+            Drag a pending ride card onto a driver marker on the map, or onto a row
+            in the online driver list. You can also click a card and then click a
+            driver marker.
+          </div>
+
+          <h3>Pending rides <span class="pill" id="op-pending-pill">0</span></h3>
+          <ul class="list dropzone" id="op-pending"></ul>
+
+          <h3>Live rides <span class="pill" id="op-live-pill">0</span></h3>
+          <ul class="list" id="op-live"></ul>
+
+          <h3>Online drivers <span class="pill" id="op-drivers-pill">0</span></h3>
+          <ul class="list" id="op-drivers"></ul>
+        </div>
+      </section>
+
+      <!-- ------------------------- DRIVER PANEL ------------------------ -->
+      <section class="panel" id="panel-driver">
+        <div class="page-head">
+          <span class="page-icon">🚗</span>
+          <div class="page-head-copy">
+            <h2>Driver console</h2>
+            <p class="hint">Go online, accept ride offers and complete trips safely.</p>
+          </div>
+        </div>
+
+        <div class="card session-card hidden" id="dr-session">
+          <div class="session-head">
+            <div>
+              <strong id="dr-name">—</strong>
+              <span class="badge" id="dr-badge">offline</span>
+            </div>
+          </div>
+          <p class="hint mono" id="dr-id">driver_id: —</p>
+
+          <div class="row gap">
+            <button class="btn primary grow" id="dr-toggle" type="button">Go online</button>
+          </div>
+
+          <div class="card inner">
+            <h3>Location sharing</h3>
+            <p class="hint">Share your device location while online so dispatch can track your position.</p>
+            <div class="row gap">
+              <button class="btn small" id="dr-real-gps" type="button">Use device GPS</button>
+              <button class="btn small" id="dr-send-location" type="button">Send GPS now</button>
+            </div>
+            <p class="mono" id="dr-coords">lat —, lng —</p>
+          </div>
+
+          <div class="ride-card hidden" id="dr-offer">
+            <h3>New ride offer</h3>
+            <p id="dr-offer-rider">—</p>
+            <dl class="kv small">
+              <div><dt>Pickup</dt><dd id="dr-offer-pickup">—</dd></div>
+              <div><dt>Destination</dt><dd id="dr-offer-dropoff">—</dd></div>
+              <div><dt>Distance</dt><dd id="dr-offer-distance">—</dd></div>
+              <div><dt>Fare</dt><dd id="dr-offer-fare">—</dd></div>
+            </dl>
+            <div class="row gap">
+              <button class="btn primary grow" id="dr-accept" type="button">Accept</button>
+              <button class="btn danger grow" id="dr-decline" type="button">Decline</button>
+            </div>
+          </div>
+
+          <div class="ride-card hidden" id="dr-active">
+            <h3>Active ride</h3>
+            <p id="dr-active-rider">—</p>
+            <p class="badge" id="dr-active-stage">assigned</p>
+            <div class="row gap">
+              <button class="btn grow" id="dr-arrived" type="button">Mark arrived</button>
+              <button class="btn primary grow" id="dr-start" type="button">Start ride</button>
+            </div>
+            <div class="row gap">
+              <button class="btn success grow" id="dr-complete" type="button">Complete ride</button>
+              <button class="btn danger grow" id="dr-cancel" type="button">Cancel</button>
+            </div>
+          </div>
+
+          <h3>Ride history</h3>
+          <ul class="list" id="dr-history"></ul>
+        </div>
+      </section>
+
+      <!-- -------------------------- ADMIN PANEL ------------------------ -->
+      <section class="panel" id="panel-admin">
+        <div class="page-head">
+          <span class="page-icon">🛡️</span>
+          <div class="page-head-copy">
+            <h2>Admin console</h2>
+            <p class="hint">Accounts, drivers, rides and the full audit trail.</p>
+          </div>
+        </div>
+
+        <div class="card session-card hidden" id="ad-session">
+          <div class="session-head">
+            <div><strong id="ad-name">—</strong><span class="badge" id="ad-badge">admin</span></div>
+          </div>
+
+          <div class="stat-row" id="ad-stats"></div>
+
+          <div class="subtabs" id="ad-subtabs">
+            <button class="subtab is-active" data-table="users" type="button">Users</button>
+            <button class="subtab" data-table="drivers" type="button">Drivers</button>
+            <button class="subtab" data-table="rides" type="button">Rides</button>
+            <button class="subtab" data-table="applications" type="button">Applications</button>
+            <button class="subtab" data-table="logs" type="button">System logs</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table" id="ad-table">
+              <thead id="ad-thead"></thead>
+              <tbody id="ad-tbody"></tbody>
+            </table>
+          </div>
+
+          <form class="card inner" id="ad-create-form" autocomplete="off">
+            <h3>Create account</h3>
+            <div class="row gap admin-create-fields">
+              <input id="ad-new-name" placeholder="Full name" required />
+              <input id="ad-new-phone" placeholder="Phone number" required />
+              <input id="ad-new-password" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" minlength="8" maxlength="128" required />
+            </div>
+            <div class="row gap admin-create-driver-fields">
+              <select id="ad-new-role">
+                <option value="user">user</option>
+                <option value="driver" selected>driver</option>
+                <option value="operator">operator</option>
+                <option value="admin">admin</option>
+              </select>
+              <input id="ad-new-vehicle" placeholder="Vehicle model (driver)" />
+              <input id="ad-new-plate" placeholder="License plate (driver)" />
+            </div>
+            <button class="btn primary small" type="submit">Create</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ---------------------- SHARED EVENT LOG ----------------------- -->
+      <section class="card log-card">
+        <h3>Realtime event log</h3>
+        <ul class="log" id="event-log"></ul>
+      </section>
+    </aside>
+
+    <!-- ============================= MAP =============================== -->
+    <section class="map-wrap">
+      <div id="map"></div>
+
+      <div class="map-hud">
+        <span class="hud-item"><i class="swatch pickup"></i> pickup</span>
+        <span class="hud-item"><i class="swatch dropoff"></i> destination</span>
+        <span class="hud-item"><i class="swatch driver-online"></i> driver online</span>
+        <span class="hud-item"><i class="swatch driver-active"></i> driver active</span>
+        <span class="hud-item"><i class="swatch route"></i> route</span>
+      </div>
+
+      <div class="legend" id="map-legend">Tashkent · 41.2995, 69.2401</div>
+      <div class="drop-overlay" id="drop-overlay">Drop on the highlighted driver</div>
+    </section>
+    </div><!-- /#console-layout -->
 
   </main>
 
