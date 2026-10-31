@@ -1655,7 +1655,7 @@
     $('#auth-signup-mode').classList.toggle('is-active', isSignup);
     $('#auth-login-mode').setAttribute('aria-selected', String(!isSignup));
     $('#auth-signup-mode').setAttribute('aria-selected', String(isSignup));
-    setText('#auth-title', isSignup ? 'Create your rider account' : 'Welcome to TBRide');
+    setText('#auth-title', isSignup ? t('Create your rider account') : t('Welcome to TBRide'));
     setText('#auth-description', isSignup
       ? 'Sign up to request and manage your rides.'
       : 'Log in to continue to your console.');
@@ -2300,6 +2300,12 @@
 
   /** Re-render everything that carries translated text. */
   function rerenderForLanguage() {
+    refreshRiderEstimate();
+    var authModal = $('#auth-modal');
+    if (authModal && !authModal.classList.contains('hidden')) {
+      var isSignup = $('#auth-signup-mode').classList.contains('is-active');
+      setAuthMode(isSignup ? 'signup' : 'login');
+    }
     renderRiderHistory();
     renderRiderRide(state.rider.activeRide);
     renderOperatorBoard();
@@ -2321,7 +2327,7 @@
   function typeStep() {
     if (!typingEl) typingEl = document.getElementById('typing-text');
     if (!typingEl) return;
-    var phrase = TYPING_PHRASES[typingIndex];
+    var phrase = t(TYPING_PHRASES[typingIndex]);
     if (!typingDeleting) {
       typingCharIndex++;
       typingEl.textContent = phrase.substring(0, typingCharIndex);
