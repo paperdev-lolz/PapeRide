@@ -53,14 +53,20 @@ public class Main {
         startHealthServer(getEnv("PORT", dotenv));
 
         WebsiteClient website = new WebsiteClient(websiteUrl, websiteToken);
-        try {
-            website.checkHealth();
-            System.out.println("✅ Website reachable at " + websiteUrl);
-        } catch (Exception e) {
-            System.err.println("ERROR: PapeRide website is not reachable at "
-                    + websiteUrl + " (" + e.getMessage() + ")");
-            System.err.println("Start it first:  cd Website && npm start");
-            System.exit(1);
+        System.out.println("Waiting for website at " + websiteUrl + " to respond...");
+        int attempts = 0;
+        while (true) {
+            try {
+                website.checkHealth();
+                System.out.println("✅ Website reachable at " + websiteUrl);
+                break;
+            } catch (Exception e) {
+                attempts++;
+                System.err.println("Website not reachable yet (" + e.getMessage() + "), retrying in 10s (attempt " + attempts + ")...");
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException ignored) {}
+            }
         }
 
         try {
@@ -92,10 +98,14 @@ public class Main {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/", exchange -> {
-                byte[] response = "OK - PapeRide Telegram Bot is alive\n".getBytes();
-                exchange.sendResponseHeaders(200, response.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response);
+                if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    exchange.sendResponseHeaders(200, -1);
+                } else {
+                    byte[] response = "OK - PapeRide Telegram Bot is alive\n".getBytes();
+                    exchange.sendResponseHeaders(200, response.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response);
+                    }
                 }
             });
             server.setExecutor(null);
