@@ -177,9 +177,49 @@ enum BotText {
             "⭐ Oxirgi safaringizni qanday baholaysiz? (1–5 yulduz)"
     ),
     EMERGENCY(
-            "🚨 Emergency: dial local emergency services immediately. Share your ride ID with support via /contact.",
-            "🚨 Чрезвычайная ситуация: немедленно звоните в службу экстренной помощи. Сообщите ID поездки в поддержку через /contact.",
-            "🚨 Havfsizlik: avvalroq mijoz xizmatiga qo'ng'iroch qiling. Safar ID'sini /contact orqali yuboring."
+            "🚨 *Emergency Assistance*\n\nIf you are in immediate danger, dial *102* (Police) or *103* (Ambulance) immediately.\n\nTo alert your emergency contact, send /emergency.\nTo configure your contact: `/emergency set @username`, `/emergency set <user_id>`, or `/emergency set <phone_number>`.",
+            "🚨 *Экстренная помощь*\n\nПри непосредственной опасности немедленно звоните *102* (Милиция) или *103* (Скорая помощь).\n\nЧтобы отправить сигнал контакту: /emergency.\nДля настройки контакта: `/emergency set @username`, `/emergency set <user_id>` или `/emergency set <номер>`.",
+            "🚨 *Favqulodda yordam*\n\nXavf ostida bo'lsangiz, darhol *102* (Militsiya) yoki *103* (Tez yordam) raqamiga qo'ng'iroq qiling.\n\nKontaktingizga signal yuborish uchun: /emergency.\nKontaktni sozlash: `/emergency set @username`, `/emergency set <user_id>` yoki `/emergency set <telefon>`."
+    ),
+    EMERGENCY_SET_SUCCESS(
+            "✅ *Emergency Contact Saved!* 🛡️\n\nYour emergency contact has been set to: *%s* (%s).\n\nWhen you send /emergency, PapeRide will dispatch:\n_\"Help me twin this is where I am: Live Location\"_\nwith your live coordinates and ride details.\n\n💡 _Test it anytime by typing /emergency_",
+            "✅ *Экстренный контакт сохранён!* 🛡️\n\nВаш контакт для экстренных ситуаций: *%s* (%s).\n\nПри вызове /emergency бот передаст:\n_\"Help me twin this is where I am: Live Location\"_\nвместе с вашей геопозицией и деталями поездки.\n\n💡 _Вы можете протестировать это командой /emergency_",
+            "✅ *Favqulodda kontakt saqlandi!* 🛡️\n\nSizning favqulodda kontaktingiz: *%s* (%s).\n\n/emergency buyrug'i berilganda bot quyidagicha xabar yuboradi:\n_\"Help me twin this is where I am: Live Location\"_\nva jonli koordinatalaringizni ulashadi.\n\n💡 _Istalgan vaqt /emergency orqali sinab ko'rishingiz mumkin_"
+    ),
+    EMERGENCY_STATUS(
+            "🛡️ *Emergency Contact Status*\n\nConfigured contact: *%s* (%s)\nUpdated: %s\n\nCommands:\n• `/emergency` — Dispatch SOS alert & live location\n• `/emergency set <@user|id|phone>` — Update contact\n• `/emergency clear` — Remove contact",
+            "🛡️ *Статус экстренного контакта*\n\nТекущий контакт: *%s* (%s)\nОбновлено: %s\n\nКоманды:\n• `/emergency` — Отправить сигнал SOS и геопозицию\n• `/emergency set <@user|id|телефон>` — Изменить контакт\n• `/emergency clear` — Удалить контакт",
+            "🛡️ *Favqulodda kontakt holati*\n\nSozlangan kontakt: *%s* (%s)\nYangilangan vaqti: %s\n\nBuyruqlar:\n• `/emergency` — SOS signali va jonli joylashuvni yuborish\n• `/emergency set <@user|id|telefon>` — Kontaktni yangilash\n• `/emergency clear` — Kontaktni o'chirish"
+    ),
+    EMERGENCY_NOT_SET(
+            "⚠️ *No Emergency Contact Set!*\n\nYou haven't configured an emergency contact yet.\n\nSet your contact now using:\n• `/emergency set @username` (e.g. `/emergency set @twin`)\n• `/emergency set <user_id>` (numeric Telegram user ID)\n• `/emergency set <phone_number>` (e.g. `/emergency set +998901234567`)\n\n🚨 *Official Emergency Numbers in Tashkent:*\n📞 Police: *102*\n🚑 Ambulance: *103*\n🚒 Fire: *101*",
+            "⚠️ *Экстренный контакт не настроен!*\n\nУ вас ещё не указан контакт для чрезвычайных ситуаций.\n\nНастройте его с помощью команды:\n• `/emergency set @username` (например, `/emergency set @twin`)\n• `/emergency set <user_id>` (числовой Telegram ID)\n• `/emergency set <номер>` (например, `/emergency set +998901234567`)\n\n🚨 *Экстренные службы в Ташкенте:*\n📞 Милиция: *102*\n🚑 Скорая помощь: *103*\n🚒 Пожарная служба: *101*",
+            "⚠️ *Favqulodda kontakt belgilanmagan!*\n\nSizda hali favqulodda kontakt o'rnatilmagan.\n\nO'rnatish uchun quyidagi buyruqlardan birini ishlating:\n• `/emergency set @username` (masalan, `/emergency set @twin`)\n• `/emergency set <user_id>` (Telegram raqamli ID)\n• `/emergency set <telefon>` (masalan, `/emergency set +998901234567`)\n\n🚨 *Toshkent tezkor xizmatlari:*\n📞 Militsiya: *102*\n🚑 Tez yordam: *103*\n🚒 O't o'chirish: *101*"
+    ),
+    EMERGENCY_CLEARED(
+            "🗑️ *Emergency contact removed.*\n\nYou can configure a new one anytime with `/emergency set <contact>`.",
+            "🗑️ *Экстренный контакт удалён.*\n\nВы можете добавить новый в любой момент с помощью `/emergency set <контакт>`.",
+            "🗑️ *Favqulodda kontakt o'chirildi.*\n\nIstalgan vaqt `/emergency set <kontakt>` orqali yangisini o'rnatishingiz mumkin."
+    ),
+    EMERGENCY_PLACEHOLDER_WARNING(
+            "💡 *Please replace the placeholder with an actual contact!*\n\nExamples:\n• `/emergency set @myfriend`\n• `/emergency set 123456789`\n• `/emergency set +998901234567`",
+            "💡 *Пожалуйста, замените шаблон на реальный контакт!*\n\nПримеры:\n• `/emergency set @myfriend`\n• `/emergency set 123456789`\n• `/emergency set +998901234567`",
+            "💡 *Iltimos, shablon o'rniga haqiqiy kontaktni kiriting!*\n\nMisollar:\n• `/emergency set @myfriend`\n• `/emergency set 123456789`\n• `/emergency set +998901234567`"
+    ),
+    EMERGENCY_DIRECT_SENT(
+            "🚨 *SOS ALERT DISPATCHED!* 🛡️\n\nDirect message & live location pin sent to your emergency contact (*%s*)!\n\n_\"Help me twin this is where I am: Live Location\"_\n📍 Location: %s\n\nStay calm and remain in a safe place.",
+            "🚨 *СИГНАЛ SOS ОТПРАВЛЕН!* 🛡️\n\nЭкстренное сообщение и геопозиция доставлены контакту (*%s*)!\n\n_\"Help me twin this is where I am: Live Location\"_\n📍 Геопозиция: %s\n\nСохраняйте спокойствие и оставайтесь в безопасности.",
+            "🚨 *SOS XABARI YUBORILDI!* 🛡️\n\nFavqulodda xabar va jonli joylashuv kontaktingizga (*%s*) yuborildi!\n\n_\"Help me twin this is where I am: Live Location\"_\n📍 Joylashuv: %s\n\nXotirjamlikni saqlang va xavfsiz joyda turing."
+    ),
+    EMERGENCY_SHARE_READY(
+            "🚨 *EMERGENCY SOS READY!* 🛡️\n\nRecipient: *%s*\nMessage: _\"Help me twin this is where I am: Live Location\"_\n📍 Location: %s\n\n👇 *Tap below to deliver immediately:*",
+            "🚨 *ЭКСТРЕННЫЙ СИГНАЛ SOS ГОТОВ!* 🛡️\n\nПолучатель: *%s*\nСообщение: _\"Help me twin this is where I am: Live Location\"_\n📍 Геопозиция: %s\n\n👇 *Нажмите кнопку ниже для отправки:*",
+            "🚨 *FAVQULODDA SOS TAYYOR!* 🛡️\n\nQabul qiluvchi: *%s*\nXabar: _\"Help me twin this is where I am: Live Location\"_\n📍 Joylashuv: %s\n\n👇 *Darhol jo'natish uchun quyidagi tugmani bosing:*"
+    ),
+    EMERGENCY_DIRECT_FAILED(
+            "⚠️ Could not send a direct message to Telegram ID *%s* (they haven't started this bot yet).\n\n👇 *Tap below to share your SOS instantly via Telegram:*",
+            "⚠️ Не удалось отправить прямое сообщение на Telegram ID *%s* (пользователь ещё не запускал бота).\n\n👇 *Нажмите кнопку ниже, чтобы отправить SOS через Telegram:*",
+            "⚠️ Telegram ID *%s* ga to'g'ridan-to'g'ri xabar yuborilmadi (bot hali ishga tushirilmagan).\n\n👇 *SOS xabarini darhol Telegram orqali yuborish uchun quyidagi tugmani bosing:*"
     ),
     SHARE(
             "📤 Share your ride details with friends or family.",

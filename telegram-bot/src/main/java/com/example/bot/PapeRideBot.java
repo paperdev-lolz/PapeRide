@@ -3,9 +3,11 @@ package com.example.bot;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendLocation;
 import org.telegram.telegrambots.meta.api.objects.Location;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.Venue;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -16,12 +18,15 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,6 +63,12 @@ public class PapeRideBot extends TelegramLongPollingBot {
 
     /** Per-chat language preference. */
     private final Map<Long, BotLanguage> chatLanguages = new ConcurrentHashMap<>();
+
+    /** Emergency contact service for SOS alerts. */
+    private final EmergencyContactService emergencyService = new EmergencyContactService();
+
+    /** User / chat ID -> last known GPS location. */
+    private final Map<Long, Location> lastKnownUserLocations = new ConcurrentHashMap<>();
 
     /** Website (shared TBRide backend) — the single source of truth. */
     private final WebsiteClient website;
@@ -130,6 +141,16 @@ public class PapeRideBot extends TelegramLongPollingBot {
             chatLanguages.computeIfAbsent(chatId,
                     ignored -> BotLanguage.fromCode(msg.getFrom().getLanguageCode()));
         }
+
+        // Cache last known location whenever sent
+        Location incomingLoc = sharedLocation(msg);
+        if (incomingLoc != null) {
+            if (msg.getFrom() != null) {
+                lastKnownUserLocations.put(msg.getFrom().getId(), incomingLoc);
+            }
+            lastKnownUserLocations.put(chatId, incomingLoc);
+        }
+
         ConversationState state = chatStates.getOrDefault(chatId, ConversationState.IDLE);
 
         // ── Commands (always available) ──────────────────────
@@ -181,7 +202,7 @@ public class PapeRideBot extends TelegramLongPollingBot {
                 return;
             }
             if (text.startsWith("/emergency")) {
-                handleEmergency(chatId);
+                handleEmergency(chatId, msg.getFrom(), text);
                 return;
             }
             if (text.startsWith("/share")) {
@@ -356,8 +377,249 @@ public class PapeRideBot extends TelegramLongPollingBot {
         send(chatId, text(chatId, BotText.RATE));
     }
 
-    private void handleEmergency(long chatId) {
-        send(chatId, text(chatId, BotText.EMERGENCY));
+    private void handleEmergency(long chatId, User from, String fullText) {
+        if (from != null) {
+            trackRider(from.getId(), chatId);
+        }
+
+        String rawCommand = fullText == null ? "/emergency" : fullText.trim();
+        String[] parts = rawCommand.split("\\s+", 2);
+        String subCommand = parts.length > 1 ? parts[1].trim() : "";
+
+        long userId = from != null ? from.getId() : chatId;
+
+        if (subCommand.isEmpty()) {
+            triggerEmergencySos(chatId, from);
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("status")
+                || subCommand.equalsIgnoreCase("show")
+                || subCommand.equalsIgnoreCase("check")) {
+            EmergencyContactService.ContactInfo contact = emergencyService.getContact(userId);
+            if (contact == null) {
+                send(chatId, text(chatId, BotText.EMERGENCY_NOT_SET));
+            } else {
+                String updatedStr = TIME_FMT.format(Instant.ofEpochMilli(contact.getUpdatedAt()));
+                send(chatId, text(chatId, BotText.EMERGENCY_STATUS,
+                        escapeMarkdown(contact.getDisplayTarget()),
+                        escapeMarkdown(contact.getType().name()),
+                        updatedStr));
+            }
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("clear")
+                || subCommand.equalsIgnoreCase("remove")
+                || subCommand.equalsIgnoreCase("reset")
+                || subCommand.equalsIgnoreCase("delete")) {
+            emergencyService.removeContact(userId);
+            send(chatId, text(chatId, BotText.EMERGENCY_CLEARED));
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("help") || subCommand.equalsIgnoreCase("info")) {
+            send(chatId, text(chatId, BotText.EMERGENCY));
+            return;
+        }
+
+        String target;
+        if (subCommand.toLowerCase(Locale.ROOT).startsWith("set")) {
+            target = subCommand.substring(3).trim();
+        } else {
+            // Allows directly doing /emergency @twin or /emergency :twin:
+            target = subCommand;
+        }
+
+        if (target.isEmpty()) {
+            send(chatId, text(chatId, BotText.EMERGENCY_NOT_SET));
+            return;
+        }
+
+        if (emergencyService.isPlaceholder(target)) {
+            send(chatId, text(chatId, BotText.EMERGENCY_PLACEHOLDER_WARNING));
+            return;
+        }
+
+        EmergencyContactService.ContactInfo saved = emergencyService.setContact(userId, target);
+        if (saved == null) {
+            sendPlain(chatId, "⚠️ Invalid contact format. Please provide a valid @username, Telegram user ID, or phone number.");
+            return;
+        }
+
+        send(chatId, text(chatId, BotText.EMERGENCY_SET_SUCCESS,
+                escapeMarkdown(saved.getDisplayTarget()),
+                escapeMarkdown(saved.getType().name())));
+    }
+
+    private void triggerEmergencySos(long chatId, User from) {
+        long userId = from != null ? from.getId() : chatId;
+        String firstName = from != null && from.getFirstName() != null ? from.getFirstName() : "Rider";
+
+        EmergencyContactService.ContactInfo contact = emergencyService.getContact(userId);
+        if (contact == null) {
+            send(chatId, text(chatId, BotText.EMERGENCY_NOT_SET));
+            return;
+        }
+
+        // Determine coordinates
+        double lat = 41.311081;
+        double lon = 69.240562;
+
+        Location loc = lastKnownUserLocations.get(userId);
+        if (loc == null) {
+            loc = lastKnownUserLocations.get(chatId);
+        }
+        if (loc != null) {
+            lat = loc.getLatitude();
+            lon = loc.getLongitude();
+        } else {
+            RideRequest req = chatRequests.get(chatId);
+            if (req != null && req.getPickupLat() != null && req.getPickupLon() != null) {
+                lat = req.getPickupLat();
+                lon = req.getPickupLon();
+            }
+        }
+
+        String mapUrl = String.format(Locale.ROOT, "https://maps.google.com/?q=%.6f,%.6f", lat, lon);
+
+        // Fetch active ride details if any
+        WebsiteClient.RideInfo activeRide = null;
+        try {
+            List<WebsiteClient.RideInfo> recent = website.listRides(userId, 3);
+            if (recent != null) {
+                for (WebsiteClient.RideInfo r : recent) {
+                    if ("pending".equals(r.status()) || "assigned".equals(r.status()) || "in_progress".equals(r.status())) {
+                        activeRide = r;
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        StringBuilder sos = new StringBuilder();
+        sos.append("🚨🚨 EMERGENCY ALERT 🚨🚨\n");
+        sos.append("From: ").append(firstName);
+        if (from != null && from.getUserName() != null) {
+            sos.append(" (@").append(from.getUserName()).append(")");
+        }
+        sos.append("\n\n");
+        sos.append("\"Help me twin this is where I am: Live Location\"\n\n");
+        sos.append("📍 Location: ").append(mapUrl).append('\n');
+        sos.append("📌 Coordinates: ").append(String.format(Locale.ROOT, "%.6f, %.6f", lat, lon)).append('\n');
+
+        if (activeRide != null) {
+            sos.append("\n🚖 Active Ride: #").append(shortId(activeRide.id()))
+               .append(" (").append(rideStatusText(chatId, activeRide.status())).append(")\n");
+            if (activeRide.pickupLabel() != null) {
+                sos.append("🟢 Pickup: ").append(activeRide.pickupLabel()).append('\n');
+            }
+            if (activeRide.dropoffLabel() != null) {
+                sos.append("🔴 Destination: ").append(activeRide.dropoffLabel()).append('\n');
+            }
+            if (activeRide.vehicleModel() != null || activeRide.licensePlate() != null) {
+                sos.append("🚗 Vehicle: ")
+                   .append(activeRide.vehicleModel() == null ? "" : activeRide.vehicleModel())
+                   .append(activeRide.licensePlate() == null ? "" : " · " + activeRide.licensePlate())
+                   .append('\n');
+            }
+            if (activeRide.driverName() != null) {
+                sos.append("👤 Driver: ").append(activeRide.driverName()).append('\n');
+            }
+            if (activeRide.driverPhone() != null) {
+                sos.append("📞 Driver Phone: ").append(activeRide.driverPhone()).append('\n');
+            }
+        }
+
+        String sosText = sos.toString();
+
+        if (contact.getType() == EmergencyContactService.ContactType.TELEGRAM_ID) {
+            boolean directSent = false;
+            try {
+                long targetChatId = Long.parseLong(contact.getTarget());
+
+                SendMessage directMsg = new SendMessage();
+                directMsg.setChatId(String.valueOf(targetChatId));
+                directMsg.setText(sosText);
+                execute(directMsg);
+
+                SendLocation directLoc = new SendLocation();
+                directLoc.setChatId(String.valueOf(targetChatId));
+                directLoc.setLatitude(lat);
+                directLoc.setLongitude(lon);
+                execute(directLoc);
+
+                directSent = true;
+            } catch (Exception e) {
+                System.err.println("[Emergency] Direct message to " + contact.getTarget() + " failed: " + e.getMessage());
+            }
+
+            if (directSent) {
+                InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+                InlineKeyboardButton mapBtn = new InlineKeyboardButton("🗺 Open Map");
+                mapBtn.setUrl(mapUrl);
+                markup.setKeyboard(List.of(List.of(mapBtn)));
+
+                SendMessage confirmMsg = new SendMessage();
+                confirmMsg.setChatId(String.valueOf(chatId));
+                confirmMsg.setText(text(chatId, BotText.EMERGENCY_DIRECT_SENT,
+                        escapeMarkdown(contact.getDisplayTarget()), mapUrl));
+                confirmMsg.enableMarkdown(true);
+                confirmMsg.setReplyMarkup(markup);
+                executeSafe(confirmMsg);
+                return;
+            }
+
+            sendSosFallbackShare(chatId, contact, mapUrl, sosText, true);
+            return;
+        }
+
+        sendSosFallbackShare(chatId, contact, mapUrl, sosText, false);
+    }
+
+    private void sendSosFallbackShare(long chatId, EmergencyContactService.ContactInfo contact, String mapUrl, String sosText, boolean directFailed) {
+        String encodedUrl = URLEncoder.encode(mapUrl, StandardCharsets.UTF_8);
+        String encodedText = URLEncoder.encode("Help me twin this is where I am: Live Location\n\n" + sosText, StandardCharsets.UTF_8);
+        String shareUrl = "https://t.me/share/url?url=" + encodedUrl + "&text=" + encodedText;
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        InlineKeyboardButton shareBtn = new InlineKeyboardButton("🚨 Send SOS (1-Tap Share)");
+        shareBtn.setUrl(shareUrl);
+
+        InlineKeyboardButton mapBtn = new InlineKeyboardButton("🗺 Open Map Pin");
+        mapBtn.setUrl(mapUrl);
+
+        if (contact.getType() == EmergencyContactService.ContactType.USERNAME) {
+            InlineKeyboardButton chatBtn = new InlineKeyboardButton("💬 Chat with @" + contact.getTarget());
+            chatBtn.setUrl("https://t.me/" + contact.getTarget());
+            rows.add(List.of(shareBtn));
+            rows.add(List.of(chatBtn, mapBtn));
+        } else {
+            rows.add(List.of(shareBtn, mapBtn));
+        }
+        markup.setKeyboard(rows);
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(String.valueOf(chatId));
+        if (directFailed) {
+            msg.setText(text(chatId, BotText.EMERGENCY_DIRECT_FAILED, escapeMarkdown(contact.getTarget())));
+        } else {
+            msg.setText(text(chatId, BotText.EMERGENCY_SHARE_READY, escapeMarkdown(contact.getDisplayTarget()), mapUrl));
+        }
+        msg.enableMarkdown(true);
+        msg.setReplyMarkup(markup);
+        executeSafe(msg);
+    }
+
+    private static String escapeMarkdown(String text) {
+        if (text == null) return "";
+        return text.replace("_", "\\_")
+                   .replace("*", "\\*")
+                   .replace("`", "\\`")
+                   .replace("[", "\\[");
     }
 
     private void handleShare(long chatId, long telegramUserId) {
@@ -652,7 +914,7 @@ public class PapeRideBot extends TelegramLongPollingBot {
             return;
         }
         if ("action:emergency".equals(data)) {
-            handleEmergency(chatId);
+            handleEmergency(chatId, cb.getFrom(), "/emergency");
             return;
         }
         if ("action:share".equals(data)) {

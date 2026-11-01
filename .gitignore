@@ -16,6 +16,8 @@
 **/target/
 **/.next/
 **/cp.txt
+**/dependency-reduced-pom.xml
+**/emergency_contacts*.json
 Website/tsconfig.tsbuildinfo
 
 **/next-env.d.ts
