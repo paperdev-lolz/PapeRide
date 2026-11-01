@@ -204,28 +204,19 @@
   }
 
   function setMapTheme(style) {
-    var url = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-    var attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+    var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+    var attr = 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ';
 
     if (style === 'voyager' || style === 'light') {
-      url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+      attr = 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom';
     } else if (style === 'satellite') {
       url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
       attr = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
     }
 
     if (mapTileLayer && map) map.removeLayer(mapTileLayer);
-    mapTileLayer = L.tileLayer(url, { maxZoom: 19, subdomains: 'abcd', attribution: attr });
-    mapTileLayer.on('tileerror', function () {
-      if (!mapTileLayer._fellBack && style !== 'voyager' && style !== 'light') {
-        mapTileLayer._fellBack = true;
-        map.removeLayer(mapTileLayer);
-        mapTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: attr
-        }).addTo(map);
-      }
-    });
+    mapTileLayer = L.tileLayer(url, { maxZoom: 19, attribution: attr });
     if (map) mapTileLayer.addTo(map);
   }
 
