@@ -43,6 +43,7 @@
 
   function logEvent(text, isError) {
     var list = $('#event-log');
+    if (!list) return;
     var line = el('li', isError ? 'err' : '', '');
     var time = new Date().toLocaleTimeString();
     line.innerHTML = '<b></b> <span></span>';
