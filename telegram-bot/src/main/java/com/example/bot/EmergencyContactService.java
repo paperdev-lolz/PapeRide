@@ -216,6 +216,51 @@ public class EmergencyContactService {
         return info;
     }
 
+    public ContactInfo setTelegramId(long userId, String raw) {
+        if (raw == null || raw.isBlank() || isPlaceholder(raw)) return null;
+        String cleaned = raw.trim();
+        if (cleaned.startsWith(":") && cleaned.endsWith(":") && cleaned.length() > 2) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1).trim();
+        }
+        if (!cleaned.matches("^\\d+$")) return null;
+        ContactInfo info = new ContactInfo(userId, raw.trim(), ContactType.TELEGRAM_ID, cleaned, System.currentTimeMillis());
+        contacts.put(userId, info);
+        persist();
+        return info;
+    }
+
+    public ContactInfo setUsername(long userId, String raw) {
+        if (raw == null || raw.isBlank() || isPlaceholder(raw)) return null;
+        String cleaned = raw.trim();
+        if (cleaned.startsWith(":") && cleaned.endsWith(":") && cleaned.length() > 2) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1).trim();
+        }
+        if (cleaned.startsWith("@")) {
+            cleaned = cleaned.substring(1).trim();
+        }
+        cleaned = cleaned.replaceAll("[^a-zA-Z0-9_]", "");
+        if (cleaned.isBlank()) return null;
+        ContactInfo info = new ContactInfo(userId, raw.trim(), ContactType.USERNAME, cleaned, System.currentTimeMillis());
+        contacts.put(userId, info);
+        persist();
+        return info;
+    }
+
+    public ContactInfo setPhoneNumber(long userId, String raw) {
+        if (raw == null || raw.isBlank() || isPlaceholder(raw)) return null;
+        String cleaned = raw.trim();
+        if (cleaned.startsWith(":") && cleaned.endsWith(":") && cleaned.length() > 2) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1).trim();
+        }
+        String digits = cleaned.replaceAll("[^0-9]", "");
+        if (digits.length() < 7) return null;
+        String target = "+" + digits;
+        ContactInfo info = new ContactInfo(userId, raw.trim(), ContactType.PHONE, target, System.currentTimeMillis());
+        contacts.put(userId, info);
+        persist();
+        return info;
+    }
+
     public ContactInfo getContact(long userId) {
         return contacts.get(userId);
     }

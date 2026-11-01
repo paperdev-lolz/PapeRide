@@ -205,6 +205,18 @@ public class PapeRideBot extends TelegramLongPollingBot {
                 handleEmergency(chatId, msg.getFrom(), text);
                 return;
             }
+            if (text.startsWith("/setid")) {
+                handleSetId(chatId, msg.getFrom(), text);
+                return;
+            }
+            if (text.startsWith("/setname")) {
+                handleSetName(chatId, msg.getFrom(), text);
+                return;
+            }
+            if (text.startsWith("/setnumber") || text.startsWith("/setphone")) {
+                handleSetNumber(chatId, msg.getFrom(), text);
+                return;
+            }
             if (text.startsWith("/share")) {
                 handleShare(chatId, msg.getFrom().getId());
                 return;
@@ -224,6 +236,9 @@ public class PapeRideBot extends TelegramLongPollingBot {
             case WAITING_FOR_PICKUP   -> handlePickupReply(chatId, msg);
             case WAITING_FOR_DESTINATION -> handleDestinationReply(chatId, msg);
             case WAITING_FOR_CONFIRMATION -> send(chatId, text(chatId, BotText.USE_BUTTONS));
+            case WAITING_FOR_EMERGENCY_ID -> handleEmergencyIdReply(chatId, msg);
+            case WAITING_FOR_EMERGENCY_NAME -> handleEmergencyNameReply(chatId, msg);
+            case WAITING_FOR_EMERGENCY_NUMBER -> handleEmergencyNumberReply(chatId, msg);
             default -> {
                 Location loc = sharedLocation(msg);
                 if (loc != null) {
@@ -393,9 +408,42 @@ public class PapeRideBot extends TelegramLongPollingBot {
             return;
         }
 
+        if (subCommand.equalsIgnoreCase("setid") || subCommand.toLowerCase(Locale.ROOT).startsWith("setid ")) {
+            String arg = subCommand.length() > 5 ? subCommand.substring(5).trim() : "";
+            processSetId(chatId, from, arg);
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("setname") || subCommand.toLowerCase(Locale.ROOT).startsWith("setname ")) {
+            String arg = subCommand.length() > 7 ? subCommand.substring(7).trim() : "";
+            processSetName(chatId, from, arg);
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("setnumber") || subCommand.toLowerCase(Locale.ROOT).startsWith("setnumber ")
+                || subCommand.equalsIgnoreCase("setphone") || subCommand.toLowerCase(Locale.ROOT).startsWith("setphone ")) {
+            int prefixLen = subCommand.toLowerCase(Locale.ROOT).startsWith("setnumber") ? 9 : 8;
+            String arg = subCommand.length() > prefixLen ? subCommand.substring(prefixLen).trim() : "";
+            processSetNumber(chatId, from, arg);
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("menu") || subCommand.equalsIgnoreCase("hub") || subCommand.equalsIgnoreCase("settings")) {
+            sendEmergencyMenu(chatId);
+            return;
+        }
+
+        if (subCommand.equalsIgnoreCase("test") || subCommand.equalsIgnoreCase("preview")) {
+            handleEmergencyTest(chatId, from);
+            return;
+        }
+
         if (subCommand.equalsIgnoreCase("status")
                 || subCommand.equalsIgnoreCase("show")
-                || subCommand.equalsIgnoreCase("check")) {
+                || subCommand.equalsIgnoreCase("check")
+                || subCommand.equalsIgnoreCase("who")
+                || subCommand.equalsIgnoreCase("contacts")
+                || subCommand.equalsIgnoreCase("list")) {
             EmergencyContactService.ContactInfo contact = emergencyService.getContact(userId);
             if (contact == null) {
                 send(chatId, text(chatId, BotText.EMERGENCY_NOT_SET));
@@ -450,6 +498,172 @@ public class PapeRideBot extends TelegramLongPollingBot {
         send(chatId, text(chatId, BotText.EMERGENCY_SET_SUCCESS,
                 escapeMarkdown(saved.getDisplayTarget()),
                 escapeMarkdown(saved.getType().name())));
+    }
+
+    private void handleSetId(long chatId, User from, String fullText) {
+        String[] parts = fullText.trim().split("\\s+", 2);
+        String arg = parts.length > 1 ? parts[1].trim() : "";
+        processSetId(chatId, from, arg);
+    }
+
+    private void handleSetName(long chatId, User from, String fullText) {
+        String[] parts = fullText.trim().split("\\s+", 2);
+        String arg = parts.length > 1 ? parts[1].trim() : "";
+        processSetName(chatId, from, arg);
+    }
+
+    private void handleSetNumber(long chatId, User from, String fullText) {
+        String[] parts = fullText.trim().split("\\s+", 2);
+        String arg = parts.length > 1 ? parts[1].trim() : "";
+        processSetNumber(chatId, from, arg);
+    }
+
+    private void processSetId(long chatId, User from, String target) {
+        long userId = from != null ? from.getId() : chatId;
+        if (target == null || target.isBlank()) {
+            chatStates.put(chatId, ConversationState.WAITING_FOR_EMERGENCY_ID);
+            send(chatId, text(chatId, BotText.EMERGENCY_PROMPT_ID));
+            return;
+        }
+        if (emergencyService.isPlaceholder(target)) {
+            send(chatId, text(chatId, BotText.EMERGENCY_PLACEHOLDER_WARNING));
+            return;
+        }
+        EmergencyContactService.ContactInfo saved = emergencyService.setTelegramId(userId, target);
+        if (saved == null) {
+            send(chatId, text(chatId, BotText.EMERGENCY_INVALID_ID));
+            return;
+        }
+        chatStates.remove(chatId);
+        send(chatId, text(chatId, BotText.EMERGENCY_SET_SUCCESS,
+                escapeMarkdown(saved.getDisplayTarget()),
+                escapeMarkdown(saved.getType().name())));
+    }
+
+    private void processSetName(long chatId, User from, String target) {
+        long userId = from != null ? from.getId() : chatId;
+        if (target == null || target.isBlank()) {
+            chatStates.put(chatId, ConversationState.WAITING_FOR_EMERGENCY_NAME);
+            send(chatId, text(chatId, BotText.EMERGENCY_PROMPT_NAME));
+            return;
+        }
+        if (emergencyService.isPlaceholder(target)) {
+            send(chatId, text(chatId, BotText.EMERGENCY_PLACEHOLDER_WARNING));
+            return;
+        }
+        EmergencyContactService.ContactInfo saved = emergencyService.setUsername(userId, target);
+        if (saved == null) {
+            send(chatId, text(chatId, BotText.EMERGENCY_INVALID_NAME));
+            return;
+        }
+        chatStates.remove(chatId);
+        send(chatId, text(chatId, BotText.EMERGENCY_SET_SUCCESS,
+                escapeMarkdown(saved.getDisplayTarget()),
+                escapeMarkdown(saved.getType().name())));
+    }
+
+    private void processSetNumber(long chatId, User from, String target) {
+        long userId = from != null ? from.getId() : chatId;
+        if (target == null || target.isBlank()) {
+            chatStates.put(chatId, ConversationState.WAITING_FOR_EMERGENCY_NUMBER);
+            send(chatId, text(chatId, BotText.EMERGENCY_PROMPT_NUMBER));
+            return;
+        }
+        if (emergencyService.isPlaceholder(target)) {
+            send(chatId, text(chatId, BotText.EMERGENCY_PLACEHOLDER_WARNING));
+            return;
+        }
+        EmergencyContactService.ContactInfo saved = emergencyService.setPhoneNumber(userId, target);
+        if (saved == null) {
+            send(chatId, text(chatId, BotText.EMERGENCY_INVALID_NUMBER));
+            return;
+        }
+        chatStates.remove(chatId);
+        send(chatId, text(chatId, BotText.EMERGENCY_SET_SUCCESS,
+                escapeMarkdown(saved.getDisplayTarget()),
+                escapeMarkdown(saved.getType().name())));
+    }
+
+    private void handleEmergencyIdReply(long chatId, Message msg) {
+        if (!msg.hasText()) {
+            send(chatId, text(chatId, BotText.EMERGENCY_INVALID_ID));
+            return;
+        }
+        processSetId(chatId, msg.getFrom(), msg.getText().trim());
+    }
+
+    private void handleEmergencyNameReply(long chatId, Message msg) {
+        if (!msg.hasText()) {
+            send(chatId, text(chatId, BotText.EMERGENCY_INVALID_NAME));
+            return;
+        }
+        processSetName(chatId, msg.getFrom(), msg.getText().trim());
+    }
+
+    private void handleEmergencyNumberReply(long chatId, Message msg) {
+        if (!msg.hasText()) {
+            send(chatId, text(chatId, BotText.EMERGENCY_INVALID_NUMBER));
+            return;
+        }
+        processSetNumber(chatId, msg.getFrom(), msg.getText().trim());
+    }
+
+    private void handleEmergencyTest(long chatId, User from) {
+        long userId = from != null ? from.getId() : chatId;
+        EmergencyContactService.ContactInfo contact = emergencyService.getContact(userId);
+        if (contact == null) {
+            send(chatId, text(chatId, BotText.EMERGENCY_NOT_SET));
+            return;
+        }
+
+        double lat = 41.311081;
+        double lon = 69.240562;
+        Location loc = lastKnownUserLocations.get(userId);
+        if (loc == null) loc = lastKnownUserLocations.get(chatId);
+        if (loc != null) {
+            lat = loc.getLatitude();
+            lon = loc.getLongitude();
+        }
+        String mapUrl = String.format(Locale.ROOT, "https://maps.google.com/?q=%.6f,%.6f", lat, lon);
+
+        send(chatId, text(chatId, BotText.EMERGENCY_TEST_PREVIEW, mapUrl,
+                escapeMarkdown(contact.getDisplayTarget()),
+                escapeMarkdown(contact.getType().name())));
+    }
+
+    private void sendEmergencyMenu(long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton nameBtn = new InlineKeyboardButton("👤 Set Username");
+        nameBtn.setCallbackData("action:emergency:setname");
+        InlineKeyboardButton idBtn = new InlineKeyboardButton("🔢 Set User ID");
+        idBtn.setCallbackData("action:emergency:setid");
+
+        InlineKeyboardButton numBtn = new InlineKeyboardButton("📱 Set Number");
+        numBtn.setCallbackData("action:emergency:setnumber");
+        InlineKeyboardButton statusBtn = new InlineKeyboardButton("📋 View Status");
+        statusBtn.setCallbackData("action:emergency:status");
+
+        InlineKeyboardButton testBtn = new InlineKeyboardButton("🧪 Test SOS Alert");
+        testBtn.setCallbackData("action:emergency:test");
+        InlineKeyboardButton clearBtn = new InlineKeyboardButton("🗑️ Clear Contact");
+        clearBtn.setCallbackData("action:emergency:clear");
+
+        InlineKeyboardButton dispatchBtn = new InlineKeyboardButton("🚨 Dispatch SOS Now");
+        dispatchBtn.setCallbackData("action:emergency:dispatch");
+
+        markup.setKeyboard(List.of(
+                List.of(nameBtn, idBtn),
+                List.of(numBtn, statusBtn),
+                List.of(testBtn, clearBtn),
+                List.of(dispatchBtn)
+        ));
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(String.valueOf(chatId));
+        msg.setText(text(chatId, BotText.EMERGENCY_MENU));
+        msg.enableMarkdown(true);
+        msg.setReplyMarkup(markup);
+        executeSafe(msg);
     }
 
     private void triggerEmergencySos(long chatId, User from) {
@@ -921,7 +1135,20 @@ public class PapeRideBot extends TelegramLongPollingBot {
             return;
         }
         if ("action:emergency".equals(data)) {
-            handleEmergency(chatId, cb.getFrom(), "/emergency");
+            sendEmergencyMenu(chatId);
+            return;
+        }
+        if (data != null && data.startsWith("action:emergency:")) {
+            String act = data.substring("action:emergency:".length());
+            switch (act) {
+                case "setname" -> processSetName(chatId, cb.getFrom(), "");
+                case "setid" -> processSetId(chatId, cb.getFrom(), "");
+                case "setnumber" -> processSetNumber(chatId, cb.getFrom(), "");
+                case "status" -> handleEmergency(chatId, cb.getFrom(), "/emergency status");
+                case "clear" -> handleEmergency(chatId, cb.getFrom(), "/emergency clear");
+                case "test" -> handleEmergencyTest(chatId, cb.getFrom());
+                case "dispatch" -> triggerEmergencySos(chatId, cb.getFrom());
+            }
             return;
         }
         if ("action:share".equals(data)) {

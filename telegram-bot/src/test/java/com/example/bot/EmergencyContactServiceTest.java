@@ -115,5 +115,31 @@ class EmergencyContactServiceTest {
         EmergencyContactService afterDelete = new EmergencyContactService(tempFile);
         assertNull(afterDelete.getContact(userId));
     }
+
+    @Test
+    void testExplicitSetters() {
+        long userId = 777L;
+
+        // Set ID
+        EmergencyContactService.ContactInfo idContact = service.setTelegramId(userId, "987654321");
+        assertNotNull(idContact);
+        assertEquals(EmergencyContactService.ContactType.TELEGRAM_ID, idContact.getType());
+        assertEquals("987654321", idContact.getTarget());
+        assertNull(service.setTelegramId(userId, "not_a_number"));
+
+        // Set Name
+        EmergencyContactService.ContactInfo nameContact = service.setUsername(userId, "@best_twin");
+        assertNotNull(nameContact);
+        assertEquals(EmergencyContactService.ContactType.USERNAME, nameContact.getType());
+        assertEquals("best_twin", nameContact.getTarget());
+        assertNull(service.setUsername(userId, ":username:"));
+
+        // Set Number
+        EmergencyContactService.ContactInfo phoneContact = service.setPhoneNumber(userId, "+998 90 123-45-67");
+        assertNotNull(phoneContact);
+        assertEquals(EmergencyContactService.ContactType.PHONE, phoneContact.getType());
+        assertEquals("+998901234567", phoneContact.getTarget());
+        assertNull(service.setPhoneNumber(userId, "123")); // too short
+    }
 }
 

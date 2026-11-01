@@ -39,3 +39,4 @@ module.exports = {
   clearEmergency,
   listActiveEmergencies,
 };
+

@@ -14,5 +14,14 @@ public enum ConversationState {
     WAITING_FOR_DESTINATION,
 
     /** Bot showed the summary — waiting for confirm / cancel. */
-    WAITING_FOR_CONFIRMATION
+    WAITING_FOR_CONFIRMATION,
+
+    /** Bot asked for emergency Telegram ID. */
+    WAITING_FOR_EMERGENCY_ID,
+
+    /** Bot asked for emergency Telegram username. */
+    WAITING_FOR_EMERGENCY_NAME,
+
+    /** Bot asked for emergency phone number. */
+    WAITING_FOR_EMERGENCY_NUMBER
 }

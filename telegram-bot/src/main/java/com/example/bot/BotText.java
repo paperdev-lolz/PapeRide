@@ -221,6 +221,46 @@ enum BotText {
             "⚠️ Не удалось отправить прямое сообщение на Telegram ID *%s* (пользователь ещё не запускал бота).\n\n👇 *Нажмите кнопку ниже, чтобы отправить SOS через Telegram:*",
             "⚠️ Telegram ID *%s* ga to'g'ridan-to'g'ri xabar yuborilmadi (bot hali ishga tushirilmagan).\n\n👇 *SOS xabarini darhol Telegram orqali yuborish uchun quyidagi tugmani bosing:*"
     ),
+    EMERGENCY_PROMPT_ID(
+            "🔢 *Set Emergency Contact by User ID*\n\nPlease reply with the numeric Telegram User ID of your contact (e.g. `123456789`).\n\n_Tip: They can find their ID by messaging @userinfobot._",
+            "🔢 *Настройка контакта по Telegram ID*\n\nОтправьте в ответ числовой Telegram ID вашего контакта (например, `123456789`).\n\n_Совет: Узнать свой ID можно в боте @userinfobot._",
+            "🔢 *Telegram ID orqali kontaktni sozlash*\n\nKontaktingizning raqamli Telegram ID'sini yuboring (masalan, `123456789`).\n\n_Maslahat: ID raqamini @userinfobot orqali bilish mumkin._"
+    ),
+    EMERGENCY_PROMPT_NAME(
+            "👤 *Set Emergency Contact by Username*\n\nPlease reply with the Telegram username of your emergency contact (e.g. `@twin` or `twin`):",
+            "👤 *Настройка контакта по юзернейму*\n\nОтправьте в ответ Telegram username вашего контакта (например, `@twin` или `twin`):",
+            "👤 *Username orqali kontaktni sozlash*\n\nKontaktingizning Telegram username'ini yuboring (masalan, `@twin` yoki `twin`):"
+    ),
+    EMERGENCY_PROMPT_NUMBER(
+            "📱 *Set Emergency Contact by Phone Number*\n\nPlease reply with the phone number of your emergency contact (e.g. `+998901234567`):",
+            "📱 *Настройка контакта по номеру телефона*\n\nОтправьте в ответ номер телефона контакта (например, `+998901234567`):",
+            "📱 *Telefon raqam orqali kontaktni sozlash*\n\nKontaktingizning telefon raqamini yuboring (masalan, `+998901234567`):"
+    ),
+    EMERGENCY_INVALID_ID(
+            "⚠️ Invalid Telegram ID. Please provide only numbers (e.g. `123456789`).",
+            "⚠️ Неверный Telegram ID. Введите только цифры (например, `123456789`).",
+            "⚠️ Noto'g'ri Telegram ID. Faqat raqamlardan iborat bo'lishi kerak (masalan, `123456789`)."
+    ),
+    EMERGENCY_INVALID_NAME(
+            "⚠️ Invalid username. Please provide a valid username (e.g. `@twin`).",
+            "⚠️ Неверный юзернейм. Введите корректный никнейм (например, `@twin`).",
+            "⚠️ Noto'g'ri username. To'g'ri username kiriting (masalan, `@twin`)."
+    ),
+    EMERGENCY_INVALID_NUMBER(
+            "⚠️ Invalid phone number. Please provide a valid number with country code (e.g. `+998901234567`).",
+            "⚠️ Неверный номер телефона. Введите номер с кодом страны (например, `+998901234567`).",
+            "⚠️ Noto'g'ri telefon raqami. Mamlakat kodi bilan kiriting (masalan, `+998901234567`)."
+    ),
+    EMERGENCY_TEST_PREVIEW(
+            "🧪 *TEST SOS ALERT (PREVIEW)* 🛡️\n\n_No real emergency was dispatched._ Here is what your contact receives when you send /emergency:\n\n\"Help me twin this is where I am: Live Location\"\n📍 Map: %s\nRecipient: *%s* (%s)",
+            "🧪 *ТЕСТОВЫЙ СИГНАЛ SOS (ПРЕДПРОСМОТР)* 🛡️\n\n_Настоящий сигнал не отправлялся._ Вот что получит ваш контакт при вызове /emergency:\n\n\"Help me twin this is where I am: Live Location\"\n📍 Карта: %s\nПолучатель: *%s* (%s)",
+            "🧪 *TEST SOS XABARI (NAMUNA)* 🛡️\n\n_Haqiqiy favqulodda signal yuborilmadi._ /emergency chaqirilganda kontaktingizga nima borishi namunasi:\n\n\"Help me twin this is where I am: Live Location\"\n📍 Xarita: %s\nQabul qiluvchi: *%s* (%s)"
+    ),
+    EMERGENCY_MENU(
+            "🛡️ *PapeRide Emergency & SOS Safety Hub*\n\nConfigure your emergency contact or trigger an emergency dispatch below:",
+            "🛡️ *Центр безопасности и экстренной связи PapeRide*\n\nНастройте контакт для экстренных ситуаций или вызовите помощь ниже:",
+            "🛡️ *PapeRide xavfsizlik va favqulodda yordam markazi*\n\nFavqulodda kontaktingizni sozlang yoki quyidan yordam chaqiring:"
+    ),
     SHARE(
             "📤 Share your ride details with friends or family.",
             "📤 Поделитесь данными поездки с друзьями или семьей.",
