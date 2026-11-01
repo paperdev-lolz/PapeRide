@@ -25,6 +25,8 @@ const EVENTS = {
   // ---- user -> server ----
   USER_REQUEST_RIDE: 'user:request_ride',
   USER_CANCEL_RIDE: 'user:cancel_ride',
+  USER_EMERGENCY: 'user:emergency',
+  USER_CLEAR_EMERGENCY: 'user:clear_emergency',
 
   // ---- operator -> server ----
   OPERATOR_ASSIGN_RIDE: 'operator:assign_ride',

@@ -43,4 +43,62 @@ module.exports = function registerUserHandlers(socket, { register }) {
     if (result.releasedDriverId) events.emitRideWithdrawn(ride.id, result.releasedDriverId, 'cancelled_by_rider');
     return { ride: events.serialiseRide(ride) };
   });
+
+  register(socket, EVENTS.USER_EMERGENCY, async (payload) => {
+    const rideId = payload && (payload.ride_id || payload.rideId);
+    const location = payload && payload.location;
+    const note = (payload && payload.note) || 'Emergency SOS triggered by rider from website';
+    const emergencyState = require('../../services/emergency.state');
+    const ridesRepo = require('../../repositories/rides.repository');
+    const systemLogs = require('../../services/system-logs.service');
+    const { ValidationError, NotFoundError } = require('../../utils/errors');
+
+    if (!rideId) throw new ValidationError('rideId is required');
+    const ride = await ridesRepo.findById(rideId);
+    if (!ride) throw new NotFoundError('Ride not found');
+    if (ride.user_id !== identity().id) {
+      throw new ValidationError('This ride does not belong to the user', { field: 'ride_id' });
+    }
+
+    const details = {
+      rideId: ride.id,
+      userId: identity().id,
+      riderName: identity().name || identity().fullName || 'Web Rider',
+      riderPhone: identity().phone || null,
+      assignedDriverId: ride.assigned_driver_id,
+      location,
+      note,
+      triggeredAt: new Date().toISOString(),
+    };
+
+    emergencyState.setEmergency(ride.id, details);
+
+    await systemLogs.log({
+      actorId: identity().id,
+      actorRole: 'user',
+      event: 'rider.emergency_sos',
+      entityId: ride.id,
+      level: 'warn',
+      details,
+    });
+
+    events.emitRideEmergency(ride, details);
+    return { ok: true, rideId: ride.id, isEmergency: true };
+  });
+
+  register(socket, EVENTS.USER_CLEAR_EMERGENCY, async (payload) => {
+    const rideId = payload && (payload.ride_id || payload.rideId);
+    const emergencyState = require('../../services/emergency.state');
+    const ridesRepo = require('../../repositories/rides.repository');
+    const ride = await ridesRepo.findById(rideId);
+    if (ride && ride.user_id === identity().id) {
+      emergencyState.clearEmergency(ride.id);
+      events.emitRideStatusUpdate({
+        ride,
+        stage: 'emergency_cleared',
+        actor: { id: identity().id, role: 'user', name: identity().name },
+      });
+    }
+    return { ok: true, rideId };
+  });
 };

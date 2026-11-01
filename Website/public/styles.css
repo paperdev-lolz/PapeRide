@@ -2769,3 +2769,290 @@ input:hover, select:hover, .modal input:hover, .modal textarea:hover {
   padding: 2px 8px;
   border-radius: 20px;
 }
+
+
+/* ==========================================================================
+   Emergency SOS & Safety System
+   ========================================================================== */
+
+.emergency-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(220, 38, 38, 0.28));
+  border: 1.5px solid rgba(239, 68, 68, 0.6);
+  color: #ff4d6d;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+}
+
+.emergency-nav-btn:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+}
+
+.emergency-nav-icon {
+  font-size: 14px;
+  animation: shake-sos 2.5s infinite ease-in-out;
+}
+
+@keyframes shake-sos {
+  0%, 80%, 100% { transform: scale(1) rotate(0); }
+  85% { transform: scale(1.15) rotate(-12deg); }
+  90% { transform: scale(1.15) rotate(12deg); }
+  95% { transform: scale(1.15) rotate(-6deg); }
+}
+
+.rider-sos-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.emergency-modal {
+  max-width: 540px;
+  width: 92%;
+  max-height: 88vh;
+  overflow-y: auto;
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(239, 68, 68, 0.2);
+}
+
+.emergency-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.emergency-card {
+  background: var(--bg-soft, #161c28);
+  border: 1.5px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-md, 12px);
+  padding: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.emergency-card.sos-active {
+  border-color: #ff0055;
+  background: linear-gradient(135deg, rgba(255, 0, 85, 0.12), rgba(217, 4, 41, 0.18));
+}
+
+.emergency-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.sos-live-pill {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: #ff0055;
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 999px;
+  animation: pulse-sos-car 0.8s infinite alternate ease-in-out;
+}
+
+.sos-active-ride-info {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pulse-btn {
+  background: linear-gradient(135deg, #ff0055, #d90429) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 0 20px rgba(255, 0, 85, 0.45);
+  transition: all 0.2s ease;
+  animation: sos-pulse-btn 1.4s infinite ease-in-out;
+}
+
+.pulse-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(255, 0, 85, 0.7);
+}
+
+@keyframes sos-pulse-btn {
+  0% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.6); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 0, 85, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); }
+}
+
+.sos-alert-banner {
+  background: rgba(255, 0, 85, 0.2);
+  border: 1.5px solid #ff0055;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  color: #ffccd5;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.sos-alert-banner b {
+  color: #ffffff;
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.emergency-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emergency-section h3 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #8b9bb4);
+}
+
+.hotlines-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 500px) {
+  .hotlines-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hotline-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-soft, #161c28);
+  border: 1.5px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text, #ffffff);
+  transition: all 0.2s ease;
+}
+
+.hotline-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand, #4aa8ff);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.hotline-card.police:hover { border-color: #3b82f6; }
+.hotline-card.ambulance:hover { border-color: #10b981; }
+.hotline-card.fire:hover { border-color: #f97316; }
+.hotline-card.rescue:hover { border-color: #a855f7; }
+
+.hotline-num {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  background: var(--line, rgba(255, 255, 255, 0.1));
+  padding: 6px 10px;
+  border-radius: 8px;
+  min-width: 46px;
+  text-align: center;
+}
+
+.hotline-card.police .hotline-num { background: rgba(59, 130, 246, 0.25); color: #60a5fa; }
+.hotline-card.ambulance .hotline-num { background: rgba(160, 185, 129, 0.25); color: #34d399; }
+.hotline-card.fire .hotline-num { background: rgba(249, 115, 22, 0.25); color: #fb923c; }
+.hotline-card.rescue .hotline-num { background: rgba(168, 85, 247, 0.25); color: #c084fc; }
+
+.hotline-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hotline-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hotline-sub {
+  font-size: 11px;
+  color: var(--muted, #8b9bb4);
+}
+
+.hotline-call-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand, #4aa8ff);
+}
+
+.emergency-contact-form {
+  background: var(--bg-soft, #161c28);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.emergency-contact-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 500px) {
+  .emergency-contact-form .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.emergency-contact-form label {
+  font-size: 11.5px;
+  color: var(--muted, #8b9bb4);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.emergency-contact-form input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text, #ffffff);
+  font-size: 13px;
+}
+
+.contact-saved-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+  align-self: center;
+}
+
+.share-actions-row {
+  display: flex;
+  gap: 8px;
+}

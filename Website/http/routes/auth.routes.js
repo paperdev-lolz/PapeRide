@@ -390,6 +390,80 @@ router.get('/rides/:id', authenticate, async (req, res, next) => {
   }
 });
 
+/** POST /api/rides/:id/emergency — trigger emergency SOS on a ride. */
+router.post('/rides/:id/emergency', authenticate, async (req, res, next) => {
+  try {
+    const rideId = assertUuid(req.params.id, 'ride id');
+    const ride = await ridesRepo.findById(rideId);
+    if (!ride) throw new NotFoundError('Ride not found');
+    if (req.identity.role === 'user' && ride.user_id !== req.identity.id) {
+      throw new ValidationError('Riders can only trigger emergency on their own rides');
+    }
+
+    const emergencyState = require('../../services/emergency.state');
+    const events = require('../../realtime/ride.events');
+    const systemLogs = require('../../services/system-logs.service');
+
+    const location = (req.body || {}).location || null;
+    const note = (req.body || {}).note || 'Emergency SOS triggered by rider from website';
+
+    const details = {
+      rideId: ride.id,
+      userId: req.identity.id,
+      riderName: req.identity.name || req.identity.fullName || 'Web Rider',
+      riderPhone: req.identity.phone || null,
+      assignedDriverId: ride.assigned_driver_id,
+      location,
+      note,
+      triggeredAt: new Date().toISOString(),
+    };
+
+    emergencyState.setEmergency(ride.id, details);
+
+    await systemLogs.log({
+      actorId: req.identity.id,
+      actorRole: req.identity.role,
+      event: 'rider.emergency_sos',
+      entityId: ride.id,
+      level: 'warn',
+      details,
+    });
+
+    events.emitRideEmergency(ride, details);
+
+    res.json({ ok: true, rideId: ride.id, isEmergency: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** POST /api/rides/:id/clear-emergency — clear emergency SOS on a ride. */
+router.post('/rides/:id/clear-emergency', authenticate, async (req, res, next) => {
+  try {
+    const rideId = assertUuid(req.params.id, 'ride id');
+    const ride = await ridesRepo.findById(rideId);
+    if (!ride) throw new NotFoundError('Ride not found');
+    if (req.identity.role === 'user' && ride.user_id !== req.identity.id) {
+      throw new ValidationError('Riders can only clear emergency on their own rides');
+    }
+
+    const emergencyState = require('../../services/emergency.state');
+    const events = require('../../realtime/ride.events');
+
+    emergencyState.clearEmergency(ride.id);
+
+    events.emitRideStatusUpdate({
+      ride,
+      stage: 'emergency_cleared',
+      actor: { id: req.identity.id, role: req.identity.role, name: req.identity.name },
+    });
+
+    res.json({ ok: true, rideId: ride.id, isEmergency: false });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /** PATCH /api/drivers/status — driver sets online/offline/active. */
 router.patch('/drivers/status', authenticate, requireRole('driver'), async (req, res, next) => {
   try {

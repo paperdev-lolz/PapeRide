@@ -812,7 +812,16 @@
       if (role === 'operator' || role === 'admin') onOperatorSnapshot(payload);
     });
     socket.on('ride:emergency', function (payload) {
-      if (role === 'operator' || role === 'admin') onRideEmergency(payload);
+      if (role === 'operator' || role === 'admin') {
+        onRideEmergency(payload);
+      } else if (state.rider.activeRide && payload && payload.rideId === state.rider.activeRide.id) {
+        state.rider.activeRide.isEmergency = true;
+        state.rider.activeRide.emergencyDetails = payload.emergency;
+        renderRiderRide(state.rider.activeRide);
+        if (typeof syncEmergencyModal === 'function') syncEmergencyModal();
+        playChime('emergency');
+        toast('🚨 ' + t('SOS Alert Dispatched!'), t('Dispatchers and operators alerted with your live location.'), 'error');
+      }
     });
     socket.on('driver:location', function (payload) {
       if (role === 'operator' || role === 'admin') {
@@ -954,6 +963,17 @@
       if (ride.driverLocation) setRiderDriverMarker(ride.driverLocation);
       var target = ride.status === 'in_progress' ? ride.dropoff : ride.pickup;
       map.panTo([target.lat, target.lng]);
+
+      var riderSosBtn = $('#rider-card-sos-btn');
+      if (riderSosBtn) {
+        if (ride.isEmergency) {
+          riderSosBtn.textContent = '🚨 ' + t('SOS ACTIVE');
+          riderSosBtn.classList.add('pulse-btn');
+        } else {
+          riderSosBtn.textContent = '🚨 ' + t('SOS / Emergency');
+          riderSosBtn.classList.remove('pulse-btn');
+        }
+      }
     } else {
       show('#rider-driver-card', false);
     }
@@ -2151,6 +2171,7 @@
       if (e.key === 'Escape') {
         closeApplyModal();
         closeAuthModal();
+        closeEmergencyModal();
       }
     });
     $('#apply-form').addEventListener('submit', submitDriverApplication);
@@ -2158,6 +2179,272 @@
     $('#header-signout').addEventListener('click', function () {
       if (headerAccountRole) logout(headerAccountRole);
     });
+
+    // =========================================================================
+    // Emergency & Safety SOS Modal Controller
+    // =========================================================================
+    var openEmergencyBtn = $('#open-emergency-modal');
+    var emergencyModal = $('#emergency-modal');
+    var emergencyCloseBtn = $('#emergency-close');
+    var sosTriggerBtn = $('#sos-trigger-btn');
+    var sosClearBtn = $('#sos-clear-btn');
+    var riderCardSosBtn = $('#rider-card-sos-btn');
+    var riderCardShareBtn = $('#rider-card-share-btn');
+    var sosShareLocationBtn = $('#sos-share-location-btn');
+    var sosSaveContactBtn = $('#sos-save-contact-btn');
+    var sosCopyLinkBtn = $('#sos-copy-link-btn');
+
+    function loadEmergencyContact() {
+      try {
+        var raw = window.localStorage.getItem('paperide.emergency_contact');
+        if (raw) {
+          var data = JSON.parse(raw);
+          if (data.name && $('#sos-contact-name')) $('#sos-contact-name').value = data.name;
+          if (data.target && $('#sos-contact-target')) $('#sos-contact-target').value = data.target;
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    function saveEmergencyContact() {
+      var name = ($('#sos-contact-name') ? $('#sos-contact-name').value : '').trim();
+      var target = ($('#sos-contact-target') ? $('#sos-contact-target').value : '').trim();
+      try {
+        window.localStorage.setItem('paperide.emergency_contact', JSON.stringify({ name: name, target: target }));
+        var savedPill = $('#sos-contact-saved');
+        if (savedPill) {
+          savedPill.classList.remove('hidden');
+          setTimeout(function () { savedPill.classList.add('hidden'); }, 3000);
+        }
+        playChime('success');
+        toast('✓ ' + t('Contact Saved'), t('Emergency contact updated successfully.'), 'success');
+      } catch (e) {
+        toast('Error', 'Failed to save contact', 'error');
+      }
+    }
+
+    function syncEmergencyModal() {
+      var ride = state.rider.activeRide;
+      var hasActiveRide = ride && ['pending', 'assigned', 'in_progress'].indexOf(ride.status) !== -1;
+      var isEmergency = hasActiveRide && ride.isEmergency;
+
+      var cardBox = $('#sos-ride-box');
+      var badge = $('#sos-active-badge');
+      var rideInfo = $('#sos-active-ride-info');
+      var triggerBtn = $('#sos-trigger-btn');
+      var activeState = $('#sos-active-state');
+      var rideDesc = $('#sos-ride-desc');
+
+      if (cardBox) {
+        cardBox.classList.toggle('sos-active', !!isEmergency);
+      }
+
+      if (hasActiveRide) {
+        if (rideInfo) {
+          rideInfo.classList.remove('hidden');
+          setText('#sos-ride-id', '#' + short(ride.id) + ' (' + t(ride.status) + ')');
+          setText('#sos-driver-name', ride.driverName || t('Waiting for driver'));
+          setText('#sos-driver-vehicle', (ride.vehicleModel || '') + (ride.licensePlate ? ' · ' + ride.licensePlate : ''));
+        }
+        if (rideDesc) rideDesc.textContent = t('Trigger a priority emergency alarm to dispatchers with your live vehicle coordinates.');
+        if (isEmergency) {
+          if (badge) badge.classList.remove('hidden');
+          if (triggerBtn) triggerBtn.classList.add('hidden');
+          if (activeState) activeState.classList.remove('hidden');
+        } else {
+          if (badge) badge.classList.add('hidden');
+          if (triggerBtn) {
+            triggerBtn.classList.remove('hidden');
+            triggerBtn.textContent = '🚨 ' + t('TRIGGER EMERGENCY SOS');
+          }
+          if (activeState) activeState.classList.add('hidden');
+        }
+      } else {
+        if (rideInfo) rideInfo.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
+        if (activeState) activeState.classList.add('hidden');
+        if (triggerBtn) {
+          triggerBtn.classList.remove('hidden');
+          triggerBtn.textContent = '🚨 ' + t('SHARE EMERGENCY LOCATION');
+        }
+        if (rideDesc) rideDesc.textContent = t('No active ride. Share your live coordinates with your trusted contact or call emergency hotlines directly below.');
+      }
+    }
+
+    function openEmergencyModal() {
+      if (emergencyModal) {
+        emergencyModal.classList.remove('hidden');
+        loadEmergencyContact();
+        syncEmergencyModal();
+      }
+    }
+
+    function closeEmergencyModal() {
+      if (emergencyModal) emergencyModal.classList.add('hidden');
+    }
+
+    function triggerRiderEmergency() {
+      var ride = state.rider.activeRide;
+      if (!ride || ['pending', 'assigned', 'in_progress'].indexOf(ride.status) === -1) {
+        shareTripLiveLocation();
+        return;
+      }
+
+      var coords = null;
+      if (ride.driverLocation) coords = ride.driverLocation;
+      else if (ride.pickup) coords = ride.pickup;
+
+      // 1. Socket dispatch
+      socket.emit('user:emergency', {
+        ride_id: ride.id,
+        location: coords,
+        note: 'Emergency SOS triggered from website rider console'
+      });
+
+      // 2. HTTP backup dispatch
+      var token = (state.sessions.user && state.sessions.user.token) ||
+                  (state.sessions[headerAccountRole] && state.sessions[headerAccountRole].token);
+      if (token) {
+        fetch('/api/rides/' + ride.id + '/emergency', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            location: coords,
+            note: 'Emergency SOS triggered from website rider console'
+          })
+        }).catch(function () { /* socket covers this */ });
+      }
+
+      ride.isEmergency = true;
+      playChime('emergency');
+      triggerHaptic([100, 50, 100, 50, 200]);
+      renderRiderRide(ride);
+      syncEmergencyModal();
+      toast('🚨 ' + t('SOS Alert Dispatched!'), t('Dispatchers and operators alerted with your live location.'), 'error');
+      logEvent('🚨 SOS triggered on ride #' + short(ride.id));
+    }
+
+    function clearRiderEmergency() {
+      var ride = state.rider.activeRide;
+      if (!ride) return;
+
+      socket.emit('user:clear_emergency', { ride_id: ride.id });
+
+      var token = (state.sessions.user && state.sessions.user.token) ||
+                  (state.sessions[headerAccountRole] && state.sessions[headerAccountRole].token);
+      if (token) {
+        fetch('/api/rides/' + ride.id + '/clear-emergency', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          }
+        }).catch(function () { /* socket covers this */ });
+      }
+
+      ride.isEmergency = false;
+      delete ride.emergencyDetails;
+      renderRiderRide(ride);
+      syncEmergencyModal();
+      toast('✓ ' + t('Emergency Resolved'), t('Emergency status cleared.'), 'info');
+      logEvent('Emergency cleared on ride #' + short(ride.id));
+    }
+
+    function getBestCoordinates(cb) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            cb({ lat: Number(pos.coords.latitude.toFixed(6)), lng: Number(pos.coords.longitude.toFixed(6)) });
+          },
+          function () {
+            fallbackCoords(cb);
+          },
+          { timeout: 4000, maximumAge: 30000, enableHighAccuracy: true }
+        );
+      } else {
+        fallbackCoords(cb);
+      }
+    }
+
+    function fallbackCoords(cb) {
+      var ride = state.rider.activeRide;
+      if (ride && ride.driverLocation) return cb(ride.driverLocation);
+      if (ride && ride.pickup) return cb(ride.pickup);
+      if (riderDriverMarker && riderDriverMarker.getLatLng) {
+        var ll = riderDriverMarker.getLatLng();
+        return cb({ lat: Number(ll.lat.toFixed(6)), lng: Number(ll.lng.toFixed(6)) });
+      }
+      if (state.rider.pickup) return cb(state.rider.pickup);
+      cb({ lat: 41.3111, lng: 69.2797 }); // Tashkent Amir Timur Square fallback
+    }
+
+    function shareTripLiveLocation() {
+      getBestCoordinates(function (coords) {
+        var mapsUrl = 'https://maps.google.com/?q=' + coords.lat + ',' + coords.lng;
+        var shareMessage = 'Help me twin this is where I am: Live Location - ' + mapsUrl;
+
+        // Populate Telegram link
+        var tgLink = $('#sos-tg-share-link');
+        if (tgLink) {
+          tgLink.href = 'https://t.me/share/url?url=' + encodeURIComponent(mapsUrl) +
+                        '&text=' + encodeURIComponent('Help me twin this is where I am: Live Location');
+        }
+
+        // Populate SMS link
+        var smsLink = $('#sos-sms-share-link');
+        if (smsLink) {
+          var rawContact = window.localStorage.getItem('paperide.emergency_contact');
+          var phoneNum = '';
+          if (rawContact) {
+            try {
+              var c = JSON.parse(rawContact);
+              if (c.target && /^[+\d]/.test(c.target)) phoneNum = c.target.replace(/[^\d+]/g, '');
+            } catch (e) { /* ignore */ }
+          }
+          smsLink.href = 'sms:' + phoneNum + (phoneNum ? '?' : '?') + 'body=' + encodeURIComponent(shareMessage);
+        }
+
+        // Show share options row
+        var shareActions = $('#sos-share-actions');
+        if (shareActions) shareActions.classList.remove('hidden');
+
+        // Copy to clipboard
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(shareMessage).then(function () {
+            toast('✓ ' + t('Copied!'), t('Live location copied to clipboard. Send via Telegram or SMS.'), 'success');
+          }).catch(function () {
+            toast('Live Location', mapsUrl, 'info');
+          });
+        } else {
+          toast('Live Location', mapsUrl, 'info');
+        }
+
+        playChime('success');
+      });
+    }
+
+    if (openEmergencyBtn) openEmergencyBtn.addEventListener('click', openEmergencyModal);
+    if (emergencyCloseBtn) emergencyCloseBtn.addEventListener('click', closeEmergencyModal);
+    if (emergencyModal) {
+      emergencyModal.addEventListener('click', function (e) {
+        if (e.target === emergencyModal) closeEmergencyModal();
+      });
+    }
+
+    if (riderCardSosBtn) riderCardSosBtn.addEventListener('click', openEmergencyModal);
+    if (riderCardShareBtn) riderCardShareBtn.addEventListener('click', function () {
+      openEmergencyModal();
+      shareTripLiveLocation();
+    });
+
+    if (sosTriggerBtn) sosTriggerBtn.addEventListener('click', triggerRiderEmergency);
+    if (sosClearBtn) sosClearBtn.addEventListener('click', clearRiderEmergency);
+    if (sosSaveContactBtn) sosSaveContactBtn.addEventListener('click', saveEmergencyContact);
+    if (sosShareLocationBtn) sosShareLocationBtn.addEventListener('click', shareTripLiveLocation);
+    if (sosCopyLinkBtn) sosCopyLinkBtn.addEventListener('click', shareTripLiveLocation);
+
 
     // logins
     $('#rider-login-form').addEventListener('submit', function (e) {

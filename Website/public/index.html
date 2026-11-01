@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="TBRide: vanilla JS ride-hailing and operator dispatch platform (Node.js + Express + Socket.IO + PostgreSQL + Leaflet)" />
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="/styles.css?v=1793519800000" />
+  <link rel="stylesheet" href="/styles.css?v=1793522000000" />
 </head>
 <body>
   <header class="topbar">
@@ -48,6 +48,10 @@
         </svg>
         <span>Telegram Bot</span>
       </a>
+      <button class="emergency-nav-btn" id="open-emergency-modal" type="button" title="Emergency SOS" aria-label="Emergency SOS">
+        <span class="emergency-nav-icon">🚨</span>
+        <span class="emergency-nav-text">SOS</span>
+      </button>
 
       <div class="theme-switch" id="theme-switch">
         <button class="theme-btn" id="theme-toggle" type="button" title="Toggle Light/Dark Mode" aria-label="Toggle theme">
@@ -458,6 +462,10 @@
               <a class="driver-phone-link" id="rider-driver-phone-link" href="#">📞 <span id="rider-driver-phone">—</span></a>
               <span class="eta-pill" id="driver-eta-status">Arriving in ~4 min</span>
             </div>
+            <div class="rider-sos-row mt-2">
+              <button class="btn danger sm grow" id="rider-card-sos-btn" type="button">🚨 SOS / Emergency</button>
+              <button class="btn secondary sm" id="rider-card-share-btn" type="button">📤 Share Trip</button>
+            </div>
           </div>
 
           <!-- Telegram Bot Sync Card -->
@@ -851,11 +859,122 @@
     </div>
   </div>
 
+    <!-- Emergency SOS Safety Modal -->
+  <div class="modal-backdrop hidden" id="emergency-modal">
+    <div class="modal emergency-modal" role="dialog" aria-modal="true" aria-labelledby="emergency-title">
+      <div class="modal-head">
+        <span class="page-icon">🚨</span>
+        <div>
+          <h2 id="emergency-title">Emergency &amp; Safety SOS</h2>
+          <p class="hint">Instant assistance, hotline dispatch, and live location sharing.</p>
+        </div>
+        <button class="btn ghost small" id="emergency-close" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="emergency-modal-body">
+        <!-- Active Ride SOS Box -->
+        <div class="emergency-card" id="sos-ride-box">
+          <div class="emergency-card-title">
+            <span>🚨 Active Ride SOS</span>
+            <span class="sos-live-pill hidden" id="sos-active-badge">BROADCAST ACTIVE</span>
+          </div>
+          <p class="hint mb-2" id="sos-ride-desc">Trigger a priority emergency alarm to dispatchers with your live vehicle coordinates.</p>
+          <div class="sos-active-ride-info hidden" id="sos-active-ride-info">
+            <div class="sos-info-row"><b>Ride:</b> <span id="sos-ride-id">—</span></div>
+            <div class="sos-info-row"><b>Driver:</b> <span id="sos-driver-name">—</span> (<span id="sos-driver-vehicle">—</span>)</div>
+          </div>
+          <button class="btn danger lg w-full pulse-btn" id="sos-trigger-btn" type="button">
+            🚨 TRIGGER EMERGENCY SOS
+          </button>
+          <div class="sos-active-state hidden" id="sos-active-state">
+            <div class="sos-alert-banner">
+              <b>🚨 SOS ALERT SENT</b>
+              <p>Operators, dispatchers, and nearby units have been alerted with your live location.</p>
+            </div>
+            <button class="btn ghost sm w-full mt-2" id="sos-clear-btn" type="button">Resolve / Clear SOS</button>
+          </div>
+        </div>
+
+        <!-- Emergency Hotlines Grid -->
+        <div class="emergency-section">
+          <h3>Emergency Hotlines</h3>
+          <div class="hotlines-grid">
+            <a href="tel:102" class="hotline-card police">
+              <span class="hotline-num">102</span>
+              <div class="hotline-info">
+                <b class="hotline-title">Police</b>
+                <span class="hotline-sub">Militia / Ichki Ishlar</span>
+              </div>
+              <span class="hotline-call-btn">📞 Call</span>
+            </a>
+            <a href="tel:103" class="hotline-card ambulance">
+              <span class="hotline-num">103</span>
+              <div class="hotline-info">
+                <b class="hotline-title">Ambulance</b>
+                <span class="hotline-sub">Medical Emergency</span>
+              </div>
+              <span class="hotline-call-btn">📞 Call</span>
+            </a>
+            <a href="tel:101" class="hotline-card fire">
+              <span class="hotline-num">101</span>
+              <div class="hotline-info">
+                <b class="hotline-title">Fire / Rescue</b>
+                <span class="hotline-sub">Yong'in xavfsizligi</span>
+              </div>
+              <span class="hotline-call-btn">📞 Call</span>
+            </a>
+            <a href="tel:112" class="hotline-card rescue">
+              <span class="hotline-num">112</span>
+              <div class="hotline-info">
+                <b class="hotline-title">Unified Rescue</b>
+                <span class="hotline-sub">FVV Emergency Center</span>
+              </div>
+              <span class="hotline-call-btn">📞 Call</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Emergency Contact & Live Location Sharing -->
+        <div class="emergency-section">
+          <h3>Emergency Contact &amp; Live Location</h3>
+          <p class="hint">Set your trusted emergency contact so you can broadcast your live location with one tap.</p>
+          <div class="emergency-contact-form">
+            <div class="form-row">
+              <div class="form-col">
+                <label for="sos-contact-name">Contact Name</label>
+                <input type="text" id="sos-contact-name" placeholder="e.g. Twin, Dad, Friend" />
+              </div>
+              <div class="form-col">
+                <label for="sos-contact-target">Telegram / Phone / User ID</label>
+                <input type="text" id="sos-contact-target" placeholder="@username, +998..., or ID" />
+              </div>
+            </div>
+            <div class="flex-row gap-2 mt-2">
+              <button class="btn secondary sm" id="sos-save-contact-btn" type="button">Save Contact</button>
+              <span class="contact-saved-pill hidden" id="sos-contact-saved">✓ Saved</span>
+            </div>
+          </div>
+
+          <div class="emergency-share-box mt-3">
+            <button class="btn primary w-full" id="sos-share-location-btn" type="button">
+              📤 Share Live Location ("Help me twin...")
+            </button>
+            <div class="share-actions-row mt-2 hidden" id="sos-share-actions">
+              <a class="btn sm ghost" id="sos-tg-share-link" href="#" target="_blank" rel="noopener">✈️ Telegram</a>
+              <a class="btn sm ghost" id="sos-sms-share-link" href="#">💬 SMS</a>
+              <button class="btn sm ghost" id="sos-copy-link-btn" type="button">📋 Copy Text</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toasts" id="toasts"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/vendor/leaflet/leaflet.js"></script>
-  <script src="/i18n.js?v=1793498799725"></script>
-  <script src="/app.js?v=1793519800000"></script>
+  <script src="/i18n.js?v=1793522000000"></script>
+  <script src="/app.js?v=1793522000000"></script>
 </body>
 </html>
