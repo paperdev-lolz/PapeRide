@@ -355,25 +355,59 @@
     return fmt(p.lat, 4) + ', ' + fmt(p.lng, 4);
   }
 
+  var activeRouteReqId = 0;
   function drawRiderRoute() {
     var r = state.rider;
-    var coords = [[r.pickup.lat, r.pickup.lng], [r.dropoff.lat, r.dropoff.lng]];
-    if (r.routeLineGlow) r.routeLineGlow.setLatLngs(coords);
-    r.routeLine.setLatLngs(coords);
     var pInput = $('#rider-search-pickup');
     var dInput = $('#rider-search-dropoff');
     if (pInput && !pInput._hasFocus) pInput.value = r.pickup.name || findNearestLandmark(r.pickup);
     if (dInput && !dInput._hasFocus) dInput.value = r.dropoff.name || findNearestLandmark(r.dropoff);
+
+    var curReq = ++activeRouteReqId;
+    var directCoords = [[r.pickup.lat, r.pickup.lng], [r.dropoff.lat, r.dropoff.lng]];
+
+    // Fetch real road routing via OpenStreetMap / OSRM
+    var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' +
+      r.pickup.lng + ',' + r.pickup.lat + ';' + r.dropoff.lng + ',' + r.dropoff.lat +
+      '?overview=full&geometries=geojson';
+
+    fetch(osrmUrl)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (curReq !== activeRouteReqId) return; // Stale request
+        if (data && data.routes && data.routes.length > 0) {
+          var route = data.routes[0];
+          // OSRM coordinates are [lng, lat], Leaflet wants [lat, lng]
+          var roadCoords = route.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
+          if (r.routeLineGlow) r.routeLineGlow.setLatLngs(roadCoords);
+          r.routeLine.setLatLngs(roadCoords);
+
+          // Update real driving distance and driving duration
+          var realDistKm = route.distance / 1000;
+          var realMins = Math.max(3, Math.round(route.duration / 60));
+          applyFareEstimate(realDistKm, realMins);
+        } else {
+          fallbackStraightLine(directCoords);
+        }
+      })
+      .catch(function () {
+        if (curReq === activeRouteReqId) fallbackStraightLine(directCoords);
+      });
   }
 
-  function refreshRiderEstimate() {
-    drawRiderRoute();
-    var d = haversineKm(state.rider.pickup, state.rider.dropoff);
+  function fallbackStraightLine(coords) {
+    var r = state.rider;
+    if (r.routeLineGlow) r.routeLineGlow.setLatLngs(coords);
+    r.routeLine.setLatLngs(coords);
+    var d = haversineKm(r.pickup, r.dropoff);
     var estMins = Math.max(3, Math.round(d * 2.4 + 2));
+    applyFareEstimate(d, estMins);
+  }
+
+  function applyFareEstimate(d, estMins) {
     setText('#rider-quote-distance', d.toFixed(1) + ' km');
     setText('#rider-est-duration', '~' + estMins + ' min');
 
-    // Tier calculation multiplier
     var baseEconomy = Math.round(9000 + d * 2500);
     var baseComfort = Math.round(14000 + d * 3400);
     var baseBusiness = Math.round(24000 + d * 5200);
@@ -385,6 +419,10 @@
     var activeTier = state.rider.tier || 'economy';
     var currentFare = activeTier === 'business' ? baseBusiness : (activeTier === 'comfort' ? baseComfort : baseEconomy);
     setText('#rider-quote-fare', money(currentFare));
+  }
+
+  function refreshRiderEstimate() {
+    drawRiderRoute();
   }
 
   function haversineKm(a, b) {
