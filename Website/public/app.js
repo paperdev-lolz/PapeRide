@@ -2095,53 +2095,123 @@
     // Smart Address Inputs with destination search
     var pInput = $('#rider-search-pickup');
     var dInput = $('#rider-search-dropoff');
+  function parseCoordinates(str) {
+    if (!str) return null;
+    var m = str.trim().match(/^([-+]?\d{1,2}(?:\.\d+)?)\s*[, ]\s*([-+]?\d{1,3}(?:\.\d+)?)$/);
+    if (!m) return null;
+    var lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    return { lat: lat, lng: lng };
+  }
     function setupSearch(input, resultsId, kind) {
       if (!input) return;
       var results = document.getElementById(resultsId);
+
+      function applyPoint(pt, label) {
+        var name = label || pt.name || findNearestLandmark(pt);
+        if (kind === 'pickup') {
+          state.rider.pickup = { lat: pt.lat, lng: pt.lng, name: name };
+          if (state.rider.pickupMarker) state.rider.pickupMarker.setLatLng([pt.lat, pt.lng]);
+        } else {
+          state.rider.dropoff = { lat: pt.lat, lng: pt.lng, name: name };
+          if (state.rider.dropoffMarker) state.rider.dropoffMarker.setLatLng([pt.lat, pt.lng]);
+        }
+        input.value = name;
+        input._hasFocus = false;
+        if (results) results.style.display = 'none';
+        if (typeof refreshRiderEstimate === 'function') refreshRiderEstimate();
+        if (typeof map !== 'undefined' && map && map.panTo) map.panTo([pt.lat, pt.lng]);
+        playChime('tap');
+      }
+
       function renderList(q) {
         if (!results) return;
-        var query = (q || '').trim().toLowerCase();
+        var raw = (q || '').trim();
+        var query = raw.toLowerCase();
         results.innerHTML = '';
         if (!query) { results.style.display = 'none'; return; }
-        var matches = DESTINATIONS.filter(function (d) { return d.name.toLowerCase().indexOf(query) !== -1 || (d.cat || '').toLowerCase().indexOf(query) !== -1; }).slice(0, 8);
-        if (!matches.length) {
+
+        // Check if user typed coordinates like "41.3087, 69.2713"
+        var parsed = parseCoordinates(raw);
+        if (parsed) {
+          var coordItem = document.createElement('div');
+          coordItem.className = 'search-item coord-item';
+          var landmark = findNearestLandmark(parsed);
+          coordItem.innerHTML = '<span class="si-name">📍 ' + parsed.lat.toFixed(5) + ', ' + parsed.lng.toFixed(5) + '</span><span class="si-cat">' + landmark + '</span>';
+          coordItem.addEventListener('mousedown', function (e) { e.preventDefault(); });
+          coordItem.addEventListener('click', function () {
+            applyPoint(parsed, parsed.lat.toFixed(5) + ', ' + parsed.lng.toFixed(5));
+          });
+          results.appendChild(coordItem);
+        }
+
+        var matches = DESTINATIONS.filter(function (d) {
+          return d.name.toLowerCase().indexOf(query) !== -1 || (d.cat || '').toLowerCase().indexOf(query) !== -1;
+        }).slice(0, parsed ? 6 : 8);
+
+        if (!matches.length && !parsed) {
           var empty = document.createElement('div');
           empty.className = 'search-empty';
-          empty.textContent = 'No destinations found';
+          empty.textContent = t('No destinations found');
           results.appendChild(empty);
           results.style.display = 'block';
           return;
         }
+
         matches.forEach(function (d) {
           var item = document.createElement('div');
           item.className = 'search-item';
           item.innerHTML = '<span class="si-name">' + d.name + '</span><span class="si-cat">' + (d.cat || '') + '</span>';
           item.addEventListener('mousedown', function (e) { e.preventDefault(); });
           item.addEventListener('click', function () {
-            if (kind === 'pickup') {
-              state.rider.pickup = { lat: d.lat, lng: d.lng, name: d.name };
-              if (state.rider.pickupMarker) state.rider.pickupMarker.setLatLng([d.lat, d.lng]);
-            } else {
-              state.rider.dropoff = { lat: d.lat, lng: d.lng, name: d.name };
-              if (state.rider.dropoffMarker) state.rider.dropoffMarker.setLatLng([d.lat, d.lng]);
-            }
-            input.value = d.name;
-            input._hasFocus = false;
-            results.style.display = 'none';
-            if (typeof refreshRiderEstimate === 'function') refreshRiderEstimate();
-            if (typeof map !== 'undefined' && map && map.panTo) map.panTo([d.lat, d.lng]);
-            try { if (window.TBRide && window.TBRide.state) {} } catch (e) {}
+            applyPoint(d, d.name);
           });
           results.appendChild(item);
         });
         results.style.display = 'block';
       }
+
       input.addEventListener('focus', function () { input._hasFocus = true; renderList(input.value); });
-      input.addEventListener('input', function () { renderList(input.value); });
-      input.addEventListener('blur', function () { input._hasFocus = false; setTimeout(function () { if (results) results.style.display = 'none'; }, 150); });
+      input.addEventListener('input', function () {
+        // Direct coordinates detection while typing
+        var parsed = parseCoordinates(input.value);
+        if (parsed) {
+          if (kind === 'pickup') {
+            state.rider.pickup = { lat: parsed.lat, lng: parsed.lng, name: input.value.trim() };
+            if (state.rider.pickupMarker) state.rider.pickupMarker.setLatLng([parsed.lat, parsed.lng]);
+          } else {
+            state.rider.dropoff = { lat: parsed.lat, lng: parsed.lng, name: input.value.trim() };
+            if (state.rider.dropoffMarker) state.rider.dropoffMarker.setLatLng([parsed.lat, parsed.lng]);
+          }
+          if (typeof refreshRiderEstimate === 'function') refreshRiderEstimate();
+          if (typeof map !== 'undefined' && map && map.panTo) map.panTo([parsed.lat, parsed.lng]);
+        }
+        renderList(input.value);
+      });
+
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          var parsed = parseCoordinates(input.value);
+          if (parsed) {
+            e.preventDefault();
+            applyPoint(parsed, parsed.lat.toFixed(5) + ', ' + parsed.lng.toFixed(5));
+          }
+        }
+      });
+
+      input.addEventListener('blur', function () {
+        input._hasFocus = false;
+        setTimeout(function () { if (results) results.style.display = 'none'; }, 200);
+      });
+
       input.addEventListener('change', function () {
-        if (kind === 'pickup') state.rider.pickup.name = input.value.trim();
-        else state.rider.dropoff.name = input.value.trim();
+        var parsed = parseCoordinates(input.value);
+        if (parsed) {
+          applyPoint(parsed, parsed.lat.toFixed(5) + ', ' + parsed.lng.toFixed(5));
+        } else {
+          if (kind === 'pickup') state.rider.pickup.name = input.value.trim();
+          else state.rider.dropoff.name = input.value.trim();
+        }
       });
     }
     setupSearch(pInput, 'pickup-results', 'pickup');
