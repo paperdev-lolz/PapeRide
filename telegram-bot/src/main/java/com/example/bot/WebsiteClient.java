@@ -153,6 +153,23 @@ public class WebsiteClient {
     }
 
     // -----------------------------------------------------------------------
+    /**
+     * Report an emergency on an active ride to the website dispatch board.
+     */
+    public void reportEmergency(long telegramUserId, String rideId, Double lat, Double lon, String note) throws Exception {
+        ObjectNode payload = json.createObjectNode();
+        payload.put("telegram_user_id", telegramUserId);
+        if (lat != null && lon != null) {
+            ObjectNode loc = payload.putObject("location");
+            loc.put("lat", lat);
+            loc.put("lng", lon);
+        }
+        if (note != null && !note.isBlank()) {
+            payload.put("note", note);
+        }
+        request("POST", "/api/telegram/rides/" + rideId + "/emergency", payload);
+    }
+
     //  plumbing
     // -----------------------------------------------------------------------
 

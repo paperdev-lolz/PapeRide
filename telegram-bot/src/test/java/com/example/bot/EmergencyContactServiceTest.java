@@ -116,3 +116,4 @@ class EmergencyContactServiceTest {
         assertNull(afterDelete.getContact(userId));
     }
 }
+

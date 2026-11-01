@@ -166,6 +166,18 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
         osc.start(now);
         osc.stop(now + 0.32);
+      } else if (kind === 'emergency' || kind === 'sos') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.18);
+        osc.frequency.setValueAtTime(880, now + 0.36);
+        osc.frequency.setValueAtTime(659.25, now + 0.54);
+        osc.frequency.setValueAtTime(880, now + 0.72);
+        osc.frequency.setValueAtTime(659.25, now + 0.90);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.15);
+        osc.start(now);
+        osc.stop(now + 1.18);
       } else if (kind === 'arrived') {
         osc.frequency.setValueAtTime(587.33, now); // D5
         osc.frequency.setValueAtTime(880, now + 0.14); // A5
@@ -499,12 +511,21 @@
     attachDropHandlers();
   }
 
+  function isDriverInEmergency(driverId) {
+    if (!driverId) return false;
+    var allRides = (state.operator.live || []).concat(state.operator.pending || []);
+    return allRides.some(function (r) {
+      return (r.assignedDriverId === driverId || (r.driver && r.driver.id === driverId)) && r.isEmergency;
+    });
+  }
+
   function upsertOperatorDriverMarker(driver) {
     if (!driver.location) return removeOperatorDriverMarker(driver.driverId);
     var latlng = [driver.location.lat, driver.location.lng];
     var marker = opDriverMarkers[driver.driverId];
-    var kind = 'driver-pin ' + (driver.status === 'active' ? 'active' : 'online');
-    var glyph = driver.status === 'active' ? '🚕' : '🚖';
+    var isEmergency = driver.isEmergency || isDriverInEmergency(driver.driverId);
+    var kind = 'driver-pin ' + (isEmergency ? 'emergency sos' : (driver.status === 'active' ? 'active' : 'online'));
+    var glyph = isEmergency ? '🚨' : (driver.status === 'active' ? '🚕' : '🚖');
     if (!marker) {
       marker = L.marker(latlng, { icon: pinIcon(kind, glyph), draggable: false });
       bindOperatorDriverDrop(marker, driver.driverId);
@@ -536,7 +557,9 @@
   }
 
   function popupForDriver(driver) {
-    return '<b>' + esc(driver.fullName) + '</b><br>' +
+    var isEmergency = driver.isEmergency || isDriverInEmergency(driver.driverId);
+    return (isEmergency ? '<div style="background:#ff0055;color:#fff;padding:4px 8px;border-radius:4px;font-weight:bold;margin-bottom:6px">🚨 EMERGENCY SOS ACTIVE</div>' : '') +
+      '<b>' + esc(driver.fullName) + '</b><br>' +
       esc(driver.vehicleModel || '') + ' · ' + esc(driver.licensePlate || '') + '<br>' +
       'status: ' + esc(driver.status) + '<br>' + coordText(driver.location);
   }
@@ -546,18 +569,23 @@
 
   function drawOperatorRide(ride) {
     clearOperatorRide(ride.id);
+    var isEmergency = ride.isEmergency || false;
+    var pickupKind = 'ride-pin ' + (isEmergency ? 'sos emergency' : (ride.status === 'pending' ? 'pending' : 'pickup'));
+    var pickupGlyph = isEmergency ? '🚨' : 'A';
     var pickup = L.marker([ride.pickup.lat, ride.pickup.lng], {
-      icon: pinIcon('ride-pin ' + (ride.status === 'pending' ? 'pending' : 'pickup'), 'A')
+      icon: pinIcon(pickupKind, pickupGlyph)
     }).addTo(layers.operator)
-      .bindPopup('<b>' + esc(ride.status) + '</b><br>' + esc(ride.riderName || 'rider') + '<br>' +
+      .bindPopup((isEmergency ? '<div style="background:#ff0055;color:#fff;padding:3px 7px;border-radius:4px;font-weight:bold;margin-bottom:5px">🚨 EMERGENCY SOS ACTIVE</div>' : '') +
+        '<b>' + esc(ride.status) + '</b><br>' + esc(ride.riderName || 'rider') + '<br>' +
         (ride.pickupLabel ? esc(ride.pickupLabel) + ' → ' + esc(ride.dropoffLabel || '?') + '<br>' : '') +
         'pickup: ' + coordText(ride.pickup) + '<br>drop: ' + coordText(ride.dropoff));
     var dropoff = L.marker([ride.dropoff.lat, ride.dropoff.lng], {
-      icon: pinIcon('ride-pin dropoff', 'B')
+      icon: pinIcon('ride-pin dropoff' + (isEmergency ? ' sos emergency' : ''), 'B')
     }).addTo(layers.operator);
     var line = L.polyline([[ride.pickup.lat, ride.pickup.lng], [ride.dropoff.lat, ride.dropoff.lng]], {
-      color: ride.status === 'in_progress' ? '#ffb020' : '#4aa8ff',
-      weight: 3, dashArray: '6 8'
+      color: isEmergency ? '#ff0055' : (ride.status === 'in_progress' ? '#ffb020' : '#4aa8ff'),
+      weight: isEmergency ? 5 : 3,
+      dashArray: isEmergency ? '4 4' : '6 8'
     }).addTo(layers.operator);
     opRidePins[ride.id] = { pickup: pickup, dropoff: dropoff, line: line };
   }
@@ -782,6 +810,9 @@
     });
     socket.on('operator:snapshot', function (payload) {
       if (role === 'operator' || role === 'admin') onOperatorSnapshot(payload);
+    });
+    socket.on('ride:emergency', function (payload) {
+      if (role === 'operator' || role === 'admin') onRideEmergency(payload);
     });
     socket.on('driver:location', function (payload) {
       if (role === 'operator' || role === 'admin') {
@@ -1024,12 +1055,13 @@
   }
 
   function rideItem(ride, options) {
-    var item = el('li', 'item' + (options && options.live ? ' live-item' : ''));
+    var isEmergency = ride.isEmergency || false;
+    var item = el('li', 'item' + (options && options.live ? ' live-item' : '') + (isEmergency ? ' sos-alert-card' : ''));
     item.setAttribute('data-ride-id', ride.id);
     if (options && options.draggable) item.setAttribute('draggable', 'true');
     item.innerHTML =
       '<div class="item-head">' +
-        '<span class="item-title">' + esc(ride.riderName || t('rider')) + ' · ' + esc(t(ride.status)) + '</span>' +
+        '<span class="item-title">' + (isEmergency ? '<span class="badge danger" style="background:#ff0055;color:#fff;margin-right:5px;animation:blink-badge 0.8s infinite alternate">🚨 SOS</span>' : '') + esc(ride.riderName || t('rider')) + ' · ' + esc(t(ride.status)) + '</span>' +
         '<span class="meta">' + (ride.quote ? ride.quote.distanceKm + ' km · ' + money(ride.quote.fare) : '') + '</span>' +
       '</div>' +
       '<div class="meta">A ' + coordText(ride.pickup) + '</div>' +
@@ -1039,6 +1071,7 @@
         '<button class="btn small primary" data-act="auto">' + t('Auto-assign') + '</button>' +
         '<button class="btn small" data-act="focus">' + t('Focus') + '</button>' +
         '<button class="btn small danger" data-act="cancel">' + t('Cancel') + '</button>' +
+        (isEmergency ? '<button class="btn small" data-act="clear-sos" style="border-color:#ff0055;color:#ff4d6d">Dismiss SOS</button>' : '') +
       '</div>';
 
     if (options && options.draggable) {
@@ -1058,6 +1091,7 @@
 
     item.addEventListener('click', function (e) {
       var act = e.target.getAttribute && e.target.getAttribute('data-act');
+      if (act === 'clear-sos') { clearOperatorEmergency(ride.id); return; }
       if (act === 'auto') { autoAssign(ride.id); return; }
       if (act === 'cancel') { operatorCancel(ride.id); return; }
       map.fitBounds(L.latLngBounds([[ride.pickup.lat, ride.pickup.lng], [ride.dropoff.lat, ride.dropoff.lng]]), { padding: [50, 50] });
@@ -1132,6 +1166,64 @@
     return best && best.dist <= 72 ? best.id : null;
   }
 
+  function clearOperatorEmergency(rideId) {
+    var session = state.sessions.operator || state.sessions.admin;
+    if (session && session.socket) {
+      session.socket.emit('operator:clear_emergency', { ride_id: rideId }, function () {
+        toast(t('Emergency dismissed'), t('Ride #{id} emergency flag cleared', { id: short(rideId) }), 'info');
+      });
+    }
+    state.operator.live = (state.operator.live || []).map(function (r) {
+      if (r.id === rideId) { r.isEmergency = false; delete r.emergencyDetails; }
+      return r;
+    });
+    state.operator.pending = (state.operator.pending || []).map(function (r) {
+      if (r.id === rideId) { r.isEmergency = false; delete r.emergencyDetails; }
+      return r;
+    });
+    state.operator.drivers.forEach(upsertOperatorDriverMarker);
+    redrawOperatorRides();
+    renderOperatorBoard();
+  }
+
+  function onRideEmergency(payload) {
+    var ride = payload.ride;
+    if (!ride) return;
+    ride.isEmergency = true;
+    ride.emergencyDetails = payload.emergency;
+
+    var found = false;
+    state.operator.live = (state.operator.live || []).map(function (r) {
+      if (r.id === ride.id) { found = true; return Object.assign({}, r, ride, { isEmergency: true }); }
+      return r;
+    });
+    if (!found) {
+      state.operator.pending = (state.operator.pending || []).map(function (r) {
+        if (r.id === ride.id) { found = true; return Object.assign({}, r, ride, { isEmergency: true }); }
+        return r;
+      });
+    }
+    if (!found) {
+      state.operator.live.unshift(ride);
+    }
+
+    playChime('emergency');
+    triggerHaptic([100, 50, 100, 50, 200]);
+
+    state.operator.drivers.forEach(upsertOperatorDriverMarker);
+    drawOperatorRide(ride);
+    renderOperatorBoard();
+
+    toast('🚨 ' + t('EMERGENCY SOS'), t('Rider triggered emergency on ride #{id}!', { id: short(ride.id) }), 'error');
+    logEvent('🚨 EMERGENCY SOS on ride #' + short(ride.id) + ' (' + (ride.driverName || 'driver') + ')');
+
+    if (ride.driverLocation) {
+      map.flyTo([ride.driverLocation.lat, ride.driverLocation.lng], 16);
+    } else if (ride.pickup) {
+      map.flyTo([ride.pickup.lat, ride.pickup.lng], 15);
+    }
+  }
+
   function renderOperatorBoard() {
     var pending = $('#op-pending');
     var live = $('#op-live');
@@ -1139,6 +1231,59 @@
     pending.innerHTML = '';
     live.innerHTML = '';
     drivers.innerHTML = '';
+
+    // Render Emergency SOS Banners if any active emergency exists
+    var emergencies = (state.operator.live || []).concat(state.operator.pending || []).filter(function (r) { return r.isEmergency; });
+    var sosContainer = $('#op-sos-alerts');
+    if (!sosContainer) {
+      sosContainer = el('div', 'sos-container');
+      sosContainer.id = 'op-sos-alerts';
+      var sessionHead = $('#op-session .session-head');
+      if (sessionHead && sessionHead.parentNode) {
+        sessionHead.parentNode.insertBefore(sosContainer, sessionHead.nextSibling);
+      }
+    }
+    if (sosContainer) {
+      sosContainer.innerHTML = '';
+      emergencies.forEach(function (er) {
+        var banner = el('div', 'sos-banner');
+        var trTime = er.emergencyDetails && er.emergencyDetails.triggeredAt
+          ? new Date(er.emergencyDetails.triggeredAt).toLocaleTimeString()
+          : 'NOW';
+        banner.innerHTML =
+          '<div class="sos-head">' +
+            '<span class="sos-badge">🚨 EMERGENCY SOS ACTIVE</span>' +
+            '<span class="sos-time">' + trTime + '</span>' +
+          '</div>' +
+          '<div class="sos-desc">' +
+            '<b>Ride #' + short(er.id) + '</b> (' + esc(t(er.status)) + ')<br>' +
+            '👤 Rider: <b>' + esc(er.riderName || 'Rider') + '</b>' + (er.riderPhone ? ' · ' + esc(er.riderPhone) : '') + '<br>' +
+            (er.driverName ? '🚗 Driver: <b>' + esc(er.driverName) + '</b> (' + esc(er.vehicleModel || '') + ' · ' + esc(er.licensePlate || '') + ')<br>' : '') +
+            (er.pickupLabel ? '📍 ' + esc(er.pickupLabel) + ' → ' + esc(er.dropoffLabel || '?') + '<br>' : '') +
+            '<span style="color:#ffb3c6">⚠️ Rider triggered emergency panic alert!</span>' +
+          '</div>' +
+          '<div class="sos-actions">' +
+            '<button class="btn small primary" data-act="focus">🎯 Focus Vehicle</button>' +
+            '<a href="tel:102" class="btn small danger">📞 Police (102)</a>' +
+            (er.driverPhone ? '<a href="tel:' + esc(er.driverPhone) + '" class="btn small">📞 Call Driver</a>' : '') +
+            '<button class="btn small" data-act="dismiss">Dismiss Alert</button>' +
+          '</div>';
+
+        banner.querySelector('[data-act="focus"]').addEventListener('click', function () {
+          if (er.driverLocation) {
+            map.flyTo([er.driverLocation.lat, er.driverLocation.lng], 16);
+          } else {
+            map.fitBounds(L.latLngBounds([[er.pickup.lat, er.pickup.lng], [er.dropoff.lat, er.dropoff.lng]]), { padding: [50, 50] });
+          }
+        });
+
+        banner.querySelector('[data-act="dismiss"]').addEventListener('click', function () {
+          clearOperatorEmergency(er.id);
+        });
+
+        sosContainer.appendChild(banner);
+      });
+    }
 
     state.operator.pending.forEach(function (ride) { pending.appendChild(rideItem(ride, { draggable: true })); });
     state.operator.live.forEach(function (ride) { live.appendChild(rideItem(ride, { live: true })); });
@@ -1165,6 +1310,10 @@
       return;
     }
     if (role === 'operator' || role === 'admin') {
+      if (payload.stage === 'emergency_cleared' || ['completed', 'cancelled'].indexOf(ride.status) !== -1) {
+        ride.isEmergency = false;
+        delete ride.emergencyDetails;
+      }
       state.operator.pending = state.operator.pending.filter(function (r) { return r.id !== ride.id; });
       var replaced = false;
       state.operator.live = state.operator.live.map(function (r) {

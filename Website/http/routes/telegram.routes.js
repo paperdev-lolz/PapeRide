@@ -73,6 +73,20 @@ router.post('/rides/:id/cancel', async (req, res, next) => {
   }
 });
 
+/** POST /api/telegram/rides/:id/emergency — trigger emergency SOS on a ride. */
+router.post('/rides/:id/emergency', async (req, res, next) => {
+  try {
+    const rideId = assertUuid(req.params.id, 'ride id');
+    const telegramUserId = (req.body || {}).telegram_user_id;
+    const location = (req.body || {}).location || null;
+    const note = (req.body || {}).note || 'Emergency SOS triggered by rider';
+    const result = await telegramService.triggerEmergency(telegramUserId, rideId, { location, note });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 /** GET /api/telegram/rides/:id/driver-contact — driver phone for a ride (bot). */
 router.get('/rides/:id/driver-contact', async (req, res, next) => {
   try {

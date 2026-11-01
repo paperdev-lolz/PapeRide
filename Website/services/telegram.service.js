@@ -21,6 +21,7 @@ const ridesRepo = require('../repositories/rides.repository');
 const ridesService = require('./rides.service');
 const systemLogs = require('../repositories/logs.repository');
 const events = require('../realtime/ride.events');
+const emergencyState = require('./emergency.state');
 const { serialiseRide } = require('../realtime/snapshots');
 const { hashPassword } = require('../utils/password');
 const { ValidationError, NotFoundError } = require('../utils/errors');
@@ -157,7 +158,48 @@ async function cancelRide(telegramUserId, rideId, reason = 'cancelled_by_rider')
     events.emitRideWithdrawn(ride.id, result.releasedDriverId, 'cancelled_by_rider');
   }
 
+  emergencyState.clearEmergency(ride.id);
   return { ride: serialiseRide(ride) };
+}
+
+/** Trigger emergency SOS on an active ride. */
+async function triggerEmergency(telegramUserId, rideId, { location = null, note = null } = {}) {
+  const tgId = assertTelegramUserId(telegramUserId);
+  const rider = await usersRepo.findByPhone(phoneFor(tgId));
+  if (!rider) throw new NotFoundError('Rider not found');
+
+  const ride = await ridesRepo.findById(rideId);
+  if (!ride) throw new NotFoundError('Ride not found');
+
+  if (ride.user_id !== rider.id) {
+    throw new ValidationError('This ride does not belong to the user', { field: 'ride_id' });
+  }
+
+  const details = {
+    rideId: ride.id,
+    userId: rider.id,
+    telegramUserId: tgId,
+    riderName: rider.full_name,
+    assignedDriverId: ride.assigned_driver_id,
+    location,
+    note: note || 'Emergency SOS triggered by rider in Telegram bot',
+    triggeredAt: new Date().toISOString(),
+  };
+
+  emergencyState.setEmergency(ride.id, details);
+
+  await systemLogs.log({
+    actorId: rider.id,
+    actorRole: 'user',
+    event: 'telegram.emergency_sos',
+    entityId: ride.id,
+    level: 'warn',
+    details,
+  });
+
+  events.emitRideEmergency(ride, details);
+
+  return { ok: true, rideId: ride.id, isEmergency: true, status: ride.status };
 }
 
 module.exports = {
@@ -168,4 +210,5 @@ module.exports = {
   bookRide,
   listRides,
   cancelRide,
+  triggerEmergency,
 };

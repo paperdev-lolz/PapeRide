@@ -89,4 +89,20 @@ module.exports = function registerOperatorHandlers(socket, { register }) {
     const drivers = await driversService.listDrivers();
     return { drivers: drivers.map(events.serialiseDriver) };
   });
+
+  register(socket, EVENTS.OPERATOR_CLEAR_EMERGENCY, async (payload) => {
+    const rideId = payload && (payload.ride_id || payload.rideId);
+    const emergencyState = require('../../services/emergency.state');
+    emergencyState.clearEmergency(rideId);
+    const ridesRepo = require('../../repositories/rides.repository');
+    const ride = await ridesRepo.findById(rideId);
+    if (ride) {
+      events.emitRideStatusUpdate({
+        ride,
+        stage: 'emergency_cleared',
+        actor: { id: identity().id, role: identity().role, name: identity().name },
+      });
+    }
+    return { ok: true, rideId };
+  });
 };

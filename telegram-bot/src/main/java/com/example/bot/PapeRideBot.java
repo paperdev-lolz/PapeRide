@@ -510,6 +510,13 @@ public class PapeRideBot extends TelegramLongPollingBot {
         sos.append("📌 Coordinates: ").append(String.format(Locale.ROOT, "%.6f, %.6f", lat, lon)).append('\n');
 
         if (activeRide != null) {
+            try {
+                website.reportEmergency(userId, activeRide.id(), lat, lon, "Rider sent /emergency SOS in Telegram bot");
+                System.out.println("[EMERGENCY REPORTED] Ride #" + activeRide.id() + " flagged on dispatch board!");
+            } catch (Exception e) {
+                System.err.println("[Emergency] Failed to flag ride on dispatch board: " + e.getMessage());
+            }
+
             sos.append("\n🚖 Active Ride: #").append(shortId(activeRide.id()))
                .append(" (").append(rideStatusText(chatId, activeRide.status())).append(")\n");
             if (activeRide.pickupLabel() != null) {

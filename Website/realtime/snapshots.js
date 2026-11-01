@@ -13,9 +13,12 @@ const ridesService = require('../services/rides.service');
 const dispatchService = require('../services/dispatch.service');
 const driversService = require('../services/drivers.service');
 const { EVENTS } = require('./rooms');
+const emergencyState = require('../services/emergency.state');
 
 function serialiseRide(ride) {
   if (!ride) return null;
+  const isEmergency = emergencyState.hasEmergency(ride.id);
+  const emergencyDetails = isEmergency ? emergencyState.getEmergency(ride.id) : null;
   return {
     id: ride.id,
     userId: ride.user_id,
@@ -42,13 +45,19 @@ function serialiseRide(ride) {
     createdAt: ride.created_at,
     updatedAt: ride.updated_at,
     quote: ridesService.quote(ride, ride),
+    isEmergency,
+    emergencyDetails,
   };
 }
 
 function serialiseDriver(driver) {
   if (!driver) return null;
+  const driverId = driver.driver_id || driver.id;
+  const isEmergency = Array.from(emergencyState.listActiveEmergencies()).some(
+    (e) => e.assignedDriverId === driverId
+  );
   return {
-    driverId: driver.driver_id || driver.id,
+    driverId,
     fullName: driver.full_name,
     phone: driver.phone_number,
     vehicleModel: driver.vehicle_model,
@@ -60,6 +69,7 @@ function serialiseDriver(driver) {
         ? { lat: Number(driver.current_lat), lng: Number(driver.current_lng) }
         : null,
     updatedAt: driver.updated_at,
+    isEmergency,
   };
 }
 

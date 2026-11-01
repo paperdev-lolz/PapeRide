@@ -52,6 +52,8 @@ const EVENTS = {
   OPERATOR_CANCEL_RIDE: 'operator:cancel_ride',
   OPERATOR_SNAPSHOT_REQUEST: 'operator:snapshot_request',
   RIDE_SUBSCRIBE: 'ride:subscribe',
+  RIDE_EMERGENCY: 'ride:emergency',
+  OPERATOR_CLEAR_EMERGENCY: 'operator:clear_emergency',
 };
 
 module.exports = { ROOMS, EVENTS };

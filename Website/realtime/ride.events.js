@@ -78,6 +78,23 @@ function emitRideRemovedFromBoard(rideId, reason) {
   io.toDrivers(EVENTS.RIDE_REMOVED, { rideId, reason, at: new Date().toISOString() });
 }
 
+/** Emergency SOS broadcast to operators and ride room. */
+function emitRideEmergency(ride, emergencyDetails) {
+  const payload = {
+    ride: serialiseRide(ride),
+    rideId: ride.id,
+    isEmergency: true,
+    emergency: emergencyDetails,
+    at: new Date().toISOString(),
+  };
+  io.toOperators(EVENTS.RIDE_EMERGENCY, payload);
+  io.toRideRoom(ride.id, EVENTS.RIDE_EMERGENCY, payload);
+  if (ride.assigned_driver_id) {
+    io.toDriver(ride.assigned_driver_id, EVENTS.RIDE_EMERGENCY, payload);
+  }
+  logger.warn('ride:emergency broadcast', { rideId: ride.id, emergencyDetails });
+}
+
 module.exports = {
   emitRideCreated,
   emitNewRideRequest,
@@ -87,6 +104,7 @@ module.exports = {
   emitDriverLocation,
   emitDriverStatus,
   emitRideRemovedFromBoard,
+  emitRideEmergency,
   serialiseRide,
   serialiseDriver,
 };

@@ -14,6 +14,7 @@ const ridesRepo = require('../repositories/rides.repository');
 const driversRepo = require('../repositories/drivers.repository');
 const usersRepo = require('../repositories/users.repository');
 const systemLogs = require('../repositories/logs.repository');
+const emergencyState = require('./emergency.state');
 const { transaction } = require('../db');
 const config = require('../config');
 const {
@@ -292,6 +293,7 @@ async function cancelRide(identity, rideId, reason) {
       details: { reason: reason || null, releasedDriverId, previousStatus: ride.status },
     });
 
+    emergencyState.clearEmergency(id);
     return { ride: updated, releasedDriverId };
   });
 }
@@ -377,6 +379,7 @@ async function completeRide(identity, rideId) {
       },
     });
 
+    emergencyState.clearEmergency(id);
     return { ride: full, driver };
   });
 }
